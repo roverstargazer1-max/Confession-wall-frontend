@@ -29,9 +29,9 @@ const router = createRouter({
       children:[
         {
           path:'', 
-          // 访问 /home就显示 IndexView，path为 ''
+          // 访问 /home就显示 HomeView，path为 ''
           name: 'home-index', 
-          component: () => import('@/views/IndexView.vue'),
+          component: () => import('@/views/HomeView.vue'),
         },
         
       ],
