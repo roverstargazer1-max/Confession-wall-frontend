@@ -1,8 +1,4 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import IndexView from '@/views/IndexView.vue'
-import AppLayout from '@/components/layout/AppLayout.vue'
-import LoginView from '@/views/LoginView.vue'
-
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -15,23 +11,25 @@ const router = createRouter({
     {
       path:"/login",
       name:"login",
-      component:LoginView
+      // 使用动态导入函数来实现懒加载
+      // 只有当用户访问 /login 路由时，LoginView.vue 的代码才会被加载
+      component: () => import('@/views/LoginView.vue')
     },
 
     {
       path:"/home",
       name:"home",
-      component:AppLayout,
+      // AppLayout 作为布局组件也可以懒加载
+      component: () => import('@/components/layout/AppLayout.vue'),
       children:[
         {
-          path:'/home',
-          component:IndexView,
+          path:'', 
+          // 访问 /home就显示 IndexView，path为 ''
+          name: 'home-index', 
+          component: () => import('@/views/IndexView.vue'),
         }
       ]
     },
-    
-
-
   ],
 })
 
