@@ -1,1 +1,1 @@
-# Confession-wall-frontend
+# JMComfessionWall-frontend
