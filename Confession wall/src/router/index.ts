@@ -15,6 +15,11 @@ const router = createRouter({
       // 只有当用户访问 /login 路由时，LoginView.vue 的代码才会被加载
       component: () => import('@/views/LoginView.vue')
     },
+    {
+      path:'/:pathMatch(.*)*',
+      name:'NotFound',
+      component: () => import('@/views/NotFoundView.vue') 
+    },
 
     {
       path:"/home",
@@ -27,8 +32,9 @@ const router = createRouter({
           // 访问 /home就显示 IndexView，path为 ''
           name: 'home-index', 
           component: () => import('@/views/IndexView.vue'),
-        }
-      ]
+        },
+        
+      ],
     },
   ],
 })
