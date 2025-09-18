@@ -14,6 +14,7 @@ const router = createRouter({
       // 使用动态导入函数来实现懒加载
       // 只有当用户访问 /login 路由时，LoginView.vue 的代码才会被加载
       component: () => import('@/views/LoginView.vue')
+      
     },
     {
       path:'/:pathMatch(.*)*',
