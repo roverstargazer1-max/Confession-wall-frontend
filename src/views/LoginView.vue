@@ -3,47 +3,57 @@
 <!-- ckl你来写 -->
   
  <script setup lang="ts">
- //表单响应式数据
+// 表单响应式数据
 import { ElMessage, FormInstance, FormRules } from 'element-plus';
-import { reactive } from 'vue';
-import { ref } from 'vue';
-const formRef = ref<FormInstance | undefined>(undefined);
+import { reactive, ref } from 'vue';
 import { login } from '@/api/users';
 
- const form = reactive({
-    username:"mahiro",
-    password:"woshigeshabi111"
- })
- //登陆事件处理
+const formRef = ref<FormInstance | undefined>(undefined);
+
+const form = reactive({
+  username: "mahiro",
+  password: "woshigeshabi111"
+});
+
+// 登录事件处理
 const onSubmit = async () => {
   try {
-    // 1. 先通过表单基础校验（非空检查）
+    // 1. 表单基础校验（非空检查）
     await formRef.value?.validate();
     
-    // 2. 再验证账号密码的实际正确性
+    // 2. 验证账号密码格式是否匹配预期
     const isCorrect = form.username === "mahiro" && form.password === "woshigeshabi111";
     if (isCorrect) {
-      ElMessage.success("战舰俾斯麦，开辟未来！"); // 正确时提示
-    //   const res = login()
-    //   console.log(res)
+      ElMessage.success("战舰俾斯麦，开辟未来！"); 
+      
+      // 3. 发送登录请求
+      const res = await login(form);
+      if (!res.data.success) {
+        ElMessage.error("铁血的骄傲，不容任何人玷污！"); 
+        throw new Error("铁血的骄傲，不容任何人玷污！");
+      }
+      console.log("ciallo", res.data);
+      
     } else {
-      ElMessage.error("铁血的骄傲，不容任何人玷污！"); // 错误时提示
+      // 账号/密码格式不匹配时的提示
+      ElMessage.error("真理只在我的射程范围内。！");
     }
-  } catch (err) {
-    // 基础校验失败（未填写）时的提示
+  } catch (error) {
+    // 捕获「表单校验失败」或「登录接口异常」
     ElMessage.error("指挥官，带领大家撤退吧，再强撑下去也没有胜算。");
+    console.error("ciallonya", error); 
   }
 };
 
- //定义表单校验规则
- const rules = reactive<FormRules>({
-    username: [
-        { required: true, message:"请输入用户名", trigger:"blur"},
-    ],
-    password: [
-        { required: true, message:"请输入密码", trigger:"blur"}
-    ]
- })
+// 表单校验规则
+const rules = reactive<FormRules>({
+  username: [
+    { required: true, message: "请输入用户名", trigger: "blur" },
+  ],
+  password: [
+    { required: true, message: "请输入密码", trigger: "blur" }
+  ]
+});
 </script>
 
 <template>
