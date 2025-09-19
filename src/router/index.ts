@@ -1,3 +1,4 @@
+import { Management } from '@element-plus/icons-vue'
 import { createRouter, createWebHistory } from 'vue-router'
 
 const router = createRouter({
@@ -32,9 +33,25 @@ const router = createRouter({
           path:'', 
           // 访问 /home就显示 HomeView，path为 ''
           name: 'home-index', 
-          component: () => import('@/views/HomeView.vue'),
+          component: () => import('@/views/HomeView.vue')
         },
-        
+
+        {
+          path:"/management",
+          name:"management",
+          component: () => import('@/views/ManageView.vue')
+        },
+        {
+          path:"/post",
+          name:"post",
+          component: () => import('@/views/PostView.vue')
+        },
+        {
+          path:"/profile",
+          name:"profile",
+          component: () => import('@/views/ProfileView.vue')
+        },
+
       ],
     },
   ],

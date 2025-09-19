@@ -1,8 +1,8 @@
 <script setup lang="ts"></script>
 
 <template>
-    <div class="homeContainer">
-        <h1>123</h1> 
+    <div class="postContainer">
+        <h1>postContainer</h1> 
     </div>
 </template>
 

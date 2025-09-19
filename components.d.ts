@@ -37,6 +37,7 @@ declare module 'vue' {
     IEpMenu: typeof import('~icons/ep/menu')['default']
     IEpMessageBox: typeof import('~icons/ep/message-box')['default']
     IEpSetting: typeof import('~icons/ep/setting')['default']
+    IEpUser: typeof import('~icons/ep/user')['default']
     IEpUserFilled: typeof import('~icons/ep/user-filled')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']

@@ -1,8 +1,8 @@
 <script setup lang="ts"></script>
 
 <template>
-    <div class="homeContainer">
-        <h1>123</h1> 
+    <div class="profileContainer">
+        <h1>profileContainer</h1> 
     </div>
 </template>
 
