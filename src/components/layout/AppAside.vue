@@ -30,8 +30,16 @@ const asideWidth = computed(() => isCollapse.value ? '65px' : '200px')
             <span>首页</span>
         </el-menu-item>
         <el-menu-item index="2">
-            <el-icon><IEpUserFilled /></el-icon>
-            <span> 用户管理</span>
+            <el-icon><IEpMessageBox /></el-icon>
+            <span>内容管理</span>
+        </el-menu-item>
+        <el-menu-item index="3">
+            <el-icon><IEpEdit /></el-icon> 
+            <span>发布帖子</span>
+        </el-menu-item>
+        <el-menu-item index="4">
+            <el-icon> <IEpUserFilled /> </el-icon>
+            <span>个人资料</span>
         </el-menu-item>
     </el-menu>
   </el-aside>
