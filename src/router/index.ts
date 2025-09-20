@@ -1,5 +1,6 @@
 import { Management } from '@element-plus/icons-vue'
 import { createRouter, createWebHistory } from 'vue-router'
+import { useUserStore } from '@/stores/user'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -11,12 +12,10 @@ const router = createRouter({
 
     {
       path:"/login",
-      name:"login",
-      // meta: { requiresAuth: false }, // 标记：不需要登录就能访问
-      // 使用动态导入函数来实现懒加载
-      // 只有当用户访问 /login 路由时，LoginView.vue 的代码才会被加载
-      component: () => import('@/views/LoginView.vue')
-      
+      name:"login",      
+      component: () => import('@/views/LoginView.vue'),
+      // meta: { requiresAuth: false } // 标记：不需要登录就能访问
+
     },
     {
       path: '/register',
@@ -32,6 +31,7 @@ const router = createRouter({
     {
       path:"/home",
       name:"home",
+      // meta: { requiresAuth: true }, // 标记：这个路由以及它的所有子路由都需要登录才能访问
       // AppLayout 作为布局组件也可以懒加载
       // meta: { requiresAuth: true }, // 标记：需要登录才能访问
       component: () => import('@/components/layout/AppLayout.vue'),
@@ -63,6 +63,5 @@ const router = createRouter({
     },
   ],
 })
-
 
 export default router

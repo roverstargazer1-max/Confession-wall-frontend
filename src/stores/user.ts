@@ -12,7 +12,18 @@ export const useUserStore = defineStore('user', () => {
     token.value = newToken
     localStorage.setItem('token', newToken)
   }
-
+  // 【新增 Action】: 用于登录成功后一次性设置所有状态
+  const setUserDataOnLogin = (loginData: any) => {
+    // 假设 loginData 是后端返回的整个 data 对象
+    // { apikey: '...', id: 1, username: '...', ... }
+    const userToken = loginData.apikey
+    token.value = userToken
+    localStorage.setItem('token', userToken)
+    
+    // 从 loginData 中提取用户信息部分并存储
+    userInfo.value = loginData 
+    localStorage.setItem('userInfo', JSON.stringify(loginData))
+  }
   // action: 接收一个包含 user_id 的对象
   const fetchUserInfo = async (params: UserInfoParams) => {
     if (!token.value) return;
@@ -36,6 +47,5 @@ export const useUserStore = defineStore('user', () => {
     localStorage.removeItem('token')
     localStorage.removeItem('userInfo')
   }
-
-  return { token, userInfo, setToken, fetchUserInfo, clearUserData }
+  return { token, userInfo, fetchUserInfo, clearUserData, setUserDataOnLogin }
 })

@@ -93,23 +93,15 @@ const handleLogin = async () => {
   try {
     const response = await loginApi(loginForm)
 
-    if (response.data.code === 200 && response.data.msg === "success") {
-      // 假设 response.data.data 的结构为 { token: '...', user_id: 1 }，待后端调整
-      const { token, user_id } = response.data.data 
-
-      // 1. 存储 Token
-      userStore.setToken(token)
-      
-      // 2. 使用从登录接口获取的 user_id 来调用 fetchUserInfo
-      if (user_id) {
-        await userStore.fetchUserInfo({ user_id: user_id })
-      }
+    if (response.data.code === 0 && response.data.msg==="string") { 
+      // 调用新的 action，直接传入后端返回的 data 对象
+      userStore.setUserDataOnLogin(response.data.data)
       
       ElMessage.success('登录成功！')
       router.push('/home')
 
     } else {
-      ElMessage.error(response.data.msg || '登录失败，请稍后再试')
+      ElMessage.error(response.data.msg || '登录失败')
     }
 
   } catch (error) {
