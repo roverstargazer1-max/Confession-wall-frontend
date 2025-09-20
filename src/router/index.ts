@@ -12,10 +12,16 @@ const router = createRouter({
     {
       path:"/login",
       name:"login",
+      // meta: { requiresAuth: false }, // 标记：不需要登录就能访问
       // 使用动态导入函数来实现懒加载
       // 只有当用户访问 /login 路由时，LoginView.vue 的代码才会被加载
       component: () => import('@/views/LoginView.vue')
       
+    },
+    {
+      path: '/register',
+      name: 'register' ,
+      component:() =>import('@/views/RegisterView.vue')
     },
     {
       path:'/:pathMatch(.*)*',
@@ -27,6 +33,7 @@ const router = createRouter({
       path:"/home",
       name:"home",
       // AppLayout 作为布局组件也可以懒加载
+      // meta: { requiresAuth: true }, // 标记：需要登录才能访问
       component: () => import('@/components/layout/AppLayout.vue'),
       children:[
         {
@@ -56,5 +63,6 @@ const router = createRouter({
     },
   ],
 })
+
 
 export default router
