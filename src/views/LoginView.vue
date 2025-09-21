@@ -93,9 +93,9 @@ const handleLogin = async () => {
   try {
     const response = await loginApi(loginForm)
 
-    if (response.data.code === 0 && response.data.msg==="string") { 
+    if (response.data.code === 0 ) { 
       // 调用新的 action，直接传入后端返回的 data 对象
-      userStore.setUserDataOnLogin(response.data.data)
+      userStore.setUserDataOnLogin(response.data)
       
       ElMessage.success('登录成功！')
       router.push('/home')

@@ -1,5 +1,39 @@
 <script setup lang="ts">
+// 1. 导入我们刚刚创建的组合式函数
+import router from '@/router'
+import { useConfirm } from '@/utils/useConfirm'
+import { ElMessage } from 'element-plus'
+import { useUserStore } from '@/stores/user' 
 
+// 获取到 userStore 函数
+const userStore = useUserStore()
+// 获取到 showConfirm 函数
+const { showConfirm } = useConfirm()
+
+// 建议使用 async/await 来处理 Promise，代码更清晰
+const leaveAccount = async () => {
+  try {
+    // 3. 调用 showConfirm 函数，并等待用户操作
+    await showConfirm('您确定要退出登录吗？', '退出确认')
+    
+    // 如果用户点击了“确定”，代码会继续往下执行
+    // TODO: 在这里执行真正的退出登录操作
+
+
+    console.log('用户确认退出')
+    // 例如：清除本地存储的 token、调用后端的退出接口、跳转到登录页等
+    //要先删除token，否则根据导航守卫无法退出
+    userStore.clearUserData()
+    router.push('/login')
+    ElMessage.success('已成功退出登录')
+
+  } catch (error) {
+    // 如果用户点击了“取消”或关闭了弹窗，代码会进入 catch 块
+    console.log('用户取消退出')
+    ElMessage.success('取消退出')
+
+  }
+}
 </script>
 <template>
   <el-header> 
@@ -21,7 +55,7 @@
         <template #dropdown>
         <el-dropdown-menu>
             <el-dropdown-item>用户姓名</el-dropdown-item>
-            <el-dropdown-item divided>退出登录</el-dropdown-item>
+            <el-dropdown-item divided @click="leaveAccount">退出登录</el-dropdown-item>
         </el-dropdown-menu>
         </template>
     </el-dropdown>

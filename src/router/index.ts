@@ -14,7 +14,6 @@ const router = createRouter({
       path:"/login",
       name:"login",      
       component: () => import('@/views/LoginView.vue'),
-      // meta: { requiresAuth: false } // 标记：不需要登录就能访问
 
     },
     {
@@ -31,9 +30,8 @@ const router = createRouter({
     {
       path:"/home",
       name:"home",
-      // meta: { requiresAuth: true }, // 标记：这个路由以及它的所有子路由都需要登录才能访问
       // AppLayout 作为布局组件也可以懒加载
-      // meta: { requiresAuth: true }, // 标记：需要登录才能访问
+  
       component: () => import('@/components/layout/AppLayout.vue'),
       children:[
         {
@@ -62,6 +60,36 @@ const router = createRouter({
       ],
     },
   ],
+})
+// === 全局前置守卫 ===
+router.beforeEach((to, from, next) => {
+  // 获取 user store 实例
+  const userStore = useUserStore()
+  const token = userStore.token
+
+  // 定义不需要登录就可以访问的页面白名单
+  const whiteList = ['/login', '/register']
+
+  // 1. 判断有无 token
+  if (token) {
+    // 1.1 如果有 token，还想去登录页，则重定向到主页
+    if (to.path === '/login') {
+      next('/home')
+    } else {
+      // 1.2 访问其他页面，直接放行
+      next()
+    }
+  } else {
+    // 2. 如果没有 token
+    // 2.1 检查目标路径是否在白名单中
+    if (whiteList.includes(to.path)) {
+      // 2.2 在白名单中，直接放行
+      next()
+    } else {
+      // 2.3 不在白名单中，强制跳转到登录页
+      next(`/login?redirect=${to.fullPath}`)
+    }
+  }
 })
 
 export default router
