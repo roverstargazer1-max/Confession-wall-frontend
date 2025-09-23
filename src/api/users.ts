@@ -1,4 +1,6 @@
 import request from '@/utils/request'
+import { useUserStore } from '@/stores/user'
+
 
 // 登录参数类型
 export interface LoginParams {
@@ -33,7 +35,14 @@ export interface UserInfoParams {
 
 //获取当前登录用户信息的接口
 export const getUserInfoApi = (params: UserInfoParams) => {
+  const userStore = useUserStore()
+  const token = userStore.token
   return request({
+    "headers":{
+      "x-api-key": token,
+      "Content-Type": "application/json",
+    } ,
+   
     url: '/api/user', 
     method: 'get',
     data: params     

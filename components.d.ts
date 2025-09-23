@@ -35,6 +35,7 @@ declare module 'vue' {
     ElRadioButton: typeof import('element-plus/es')['ElRadioButton']
     ElRadioGroup: typeof import('element-plus/es')['ElRadioGroup']
     ElScrollbar: typeof import('element-plus/es')['ElScrollbar']
+    ElUpload: typeof import('element-plus/es')['ElUpload']
     IEpEdit: typeof import('~icons/ep/edit')['default']
     IEpHouse: typeof import('~icons/ep/house')['default']
     IEpMenu: typeof import('~icons/ep/menu')['default']

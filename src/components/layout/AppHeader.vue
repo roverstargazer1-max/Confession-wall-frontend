@@ -7,21 +7,21 @@ import { useUserStore } from '@/stores/user'
 
 // 获取到 userStore 函数
 const userStore = useUserStore()
+//获得用户昵称
+const name = userStore.userInfo.name
+
 // 获取到 showConfirm 函数
 const { showConfirm } = useConfirm()
 
-// 建议使用 async/await 来处理 Promise，代码更清晰
+// 异步
 const leaveAccount = async () => {
   try {
     // 3. 调用 showConfirm 函数，并等待用户操作
     await showConfirm('您确定要退出登录吗？', '退出确认')
     
     // 如果用户点击了“确定”，代码会继续往下执行
-    // TODO: 在这里执行真正的退出登录操作
-
-
     console.log('用户确认退出')
-    // 例如：清除本地存储的 token、调用后端的退出接口、跳转到登录页等
+    // 清除本地存储的 token、调用后端的退出接口、跳转到登录页等
     //要先删除token，否则根据导航守卫无法退出
     userStore.clearUserData()
     router.push('/login')
@@ -39,12 +39,7 @@ const leaveAccount = async () => {
   <el-header> 
 
     <el-breadcrumb separator="/">
-        <el-breadcrumb-item :to="{ path: '/' }">homepage</el-breadcrumb-item>
-        <el-breadcrumb-item>
-        <a href="/">promotion management</a>
-        </el-breadcrumb-item>
-        <el-breadcrumb-item>promotion list</el-breadcrumb-item>
-        <el-breadcrumb-item>promotion detail</el-breadcrumb-item>
+        <el-breadcrumb-item :to="{ path: '/home' }">首页</el-breadcrumb-item>
     </el-breadcrumb>
 
     <el-dropdown>
@@ -54,7 +49,7 @@ const leaveAccount = async () => {
         </span>
         <template #dropdown>
         <el-dropdown-menu>
-            <el-dropdown-item>用户姓名</el-dropdown-item>
+            <el-dropdown-item>{{name}}</el-dropdown-item>
             <el-dropdown-item divided @click="leaveAccount">退出登录</el-dropdown-item>
         </el-dropdown-menu>
         </template>
