@@ -48,3 +48,21 @@ export const getUserInfoApi = (params: UserInfoParams) => {
     data: params     
   })
 }
+// 注册参数类型
+export interface RegisterParams {
+  username: string
+  password: string
+  name: string
+  type: number
+}
+//注册接口
+export const registerApi = (params: RegisterParams) => {
+  return request ({
+    "headers":{
+      "Content-Type": "application/json",
+    } ,
+    url: '/api/user/register',
+    method: 'post',
+    data: params
+  })
+}
