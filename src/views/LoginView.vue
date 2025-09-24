@@ -3,7 +3,7 @@
     <el-card class="login-card" shadow="hover">
       <div class="login-header">
         <h2>JM表白墙</h2>
-        <p>全舰火力全开 Feuer</p>
+        <p>战舰俾斯麦，开辟未来！</p>
       </div>
       
       <el-form 
