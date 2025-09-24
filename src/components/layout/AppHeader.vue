@@ -4,12 +4,20 @@ import router from '@/router'
 import { useConfirm } from '@/utils/useConfirm'
 import { ElMessage } from 'element-plus'
 import { useUserStore } from '@/stores/user' 
+import { computed } from 'vue'
+
 
 // 获取到 userStore 函数
 const userStore = useUserStore()
 //获得用户昵称
-const name = userStore.userInfo.name
+const name = computed(()=> userStore.userInfo.name)
 
+// 【新增】创建一个计算属性来获取头像 URL
+// 如果 store 中没有头像地址，就使用一个默认的头像作为备选
+const avatarUrl = computed(() => {
+  const defaultAvatar = 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png'
+  return userStore.userInfo.portrait || defaultAvatar
+})
 // 获取到 showConfirm 函数
 const { showConfirm } = useConfirm()
 
@@ -45,7 +53,7 @@ const leaveAccount = async () => {
     <el-dropdown>
         <span class="el-dropdown-link">
         <!-- 后续需改为用户头像 -->
-        <el-avatar :size="50" :src="'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png'" />
+        <el-avatar :size="50" :src="avatarUrl" />
         </span>
         <template #dropdown>
         <el-dropdown-menu>

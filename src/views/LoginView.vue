@@ -87,25 +87,29 @@ const loginRules = {
 
 // 登录处理 
 const handleLogin = async () => {
-  const valid = await loginFormRef.value.validate()
-  if (!valid) return
-  
-  try {
-    const response = await loginApi(loginForm)
+  try{
+    await loginFormRef.value.validate()
+    
+    try {
+      const response = await loginApi(loginForm)
 
-    if (response.data.code === 0 ) { 
-      // 调用新的 action，直接传入后端返回的 data 对象
-      userStore.setUserDataOnLogin(response.data)
-      
-      ElMessage.success('登录成功！')
-      router.push('/home')
+      if (response.data.code === 200 ) { 
+        // 调用新的 action，直接传入后端返回的 data 对象
+        userStore.setUserDataOnLogin(response.data)
+        
+        ElMessage.success('登录成功！')
+        router.push('/home')
 
-    } else {
-      ElMessage.error(response.data.msg || '登录失败')
+      } 
+      else {
+        ElMessage.error(response.data.msg || '登录失败')
+      }
+
+    } catch (error) {
+      ElMessage.error('账号或密码错误')
     }
-
-  } catch (error) {
-    ElMessage.error('账号或密码错误')
+  } catch(validationError){
+    console.log('表单验证失败', validationError)
   }
 }
 </script>

@@ -5,6 +5,7 @@ import { useUserStore } from '@/stores/user'
 // 密码类型
 export interface RevisePassword {
   newpassword: string
+  oldpassword:string
   user_id: number
 }
 
@@ -42,5 +43,20 @@ export const reviseNameApi = (params: ReviseName) => {
     url: '/api/user/amend/name',
     method: 'PATCH',
     data: params
+  })
+}
+// 上传头像接口
+export const revisePortraitApi = (data: FormData) => {
+  const userStore = useUserStore()
+  const token = userStore.token
+  return request({
+    url: '/api/user/amend/portrait', 
+    method: 'POST', 
+    headers: {
+      'x-api-key': token,
+      // 当使用 FormData 时，不需要手动设置 'Content-Type'
+      // 浏览器会自动设置 'Content-Type': 'multipart/form-data' 并附带正确的 boundary
+    },
+    data: data // 包含 user_id 和 picture 的 FormData
   })
 }

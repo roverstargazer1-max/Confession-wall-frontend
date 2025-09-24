@@ -100,22 +100,26 @@ const RegisterRules = {
 
 // 注册处理 
 const handleRegister = async () => {
-  const valid = await registerFormRef.value.validate()
-  if (!valid) return
-  
-  try {
-    const response = await registerApi(registerForm)
 
-    if (response.data.code === 200 ) { 
-      ElMessage.success('注册成功！')
-      router.push('/login')
+  try{
+    const valid = await registerFormRef.value.validate()  
+    try {
+        const response = await registerApi(registerForm)
 
-    } else {
-      ElMessage.error(response.data.msg || '注册失败')
+        if (response.data.code === 200 ) { 
+        ElMessage.success('注册成功！')
+        router.push('/login')
+
+        } else {
+        ElMessage.error(response.data.msg || '注册失败')
+        }
+
+    } catch (error) {
+        ElMessage.error('注册失败')
     }
-
-  } catch (error) {
-    ElMessage.error('注册失败')
+  }catch(validationError){
+    console.log('注册表单验证失败',validationError);
+    
   }
 }
 </script>
