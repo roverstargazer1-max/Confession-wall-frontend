@@ -1,6 +1,5 @@
-// src/stores/post.ts
 import { defineStore } from 'pinia'
-import type { Post } from '../types/PostType'
+import type { Post } from '@/types'
 import { useUserStore } from './user'
 
 export const usePostStore = defineStore('post', {
