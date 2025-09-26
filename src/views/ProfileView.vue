@@ -17,7 +17,7 @@ const passwordFormRef = ref() // 用于获取表单实例
 const nameFormRef =ref()
 
 const passwordForm = reactive({
-  oldPassword: '',
+  orginpassword: '',
   newPassword: '',
   confirmPassword: ''
 })
@@ -46,7 +46,7 @@ const handlePasswordChange = async () => {
 
     // 步骤 2: 只有验证成功才会执行这里
     try {
-      const params = { newpassword: passwordForm.newPassword, user_id: userStore.userInfo.id , oldpassword:passwordForm.oldPassword}
+      const params = { newpassword: passwordForm.newPassword, user_id: userStore.userInfo.id , orginpassword:passwordForm.orginpassword}
       const Response = await revisePasswApi(params)
       if(Response.data.code === 200){
         
@@ -90,7 +90,7 @@ const validateConfirmPassword = (rule: any, value: any, callback: any) => {
   }
 }
 const passwordRules = reactive({
-  oldPassword: [
+  orginpassword: [
     { required: true, message: '请输入原密码', trigger: 'blur' }
   ],
   newPassword: [
@@ -203,8 +203,8 @@ const handleUpload = async (options: any) => {
         status-icon
         label-position="left"
       >
-        <el-form-item label="原密码" prop="oldPassword">
-          <el-input  v-model="passwordForm.oldPassword" type="password" show-password />
+        <el-form-item label="原密码" prop="orginpassword">
+          <el-input  v-model="passwordForm.orginpassword" type="password" show-password />
         </el-form-item>
 
         <el-form-item label="新密码" prop="newPassword">
