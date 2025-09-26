@@ -5,7 +5,7 @@ import { useUserStore } from '@/stores/user'
 // 密码类型
 export interface RevisePassword {
   newpassword: string
-  oldpassword:string
+  orginpassword:string
   user_id: number
 }
 
