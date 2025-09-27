@@ -1,11 +1,13 @@
-<script setup lang="ts"></script>
-<!-- 管理帖子的界面，实现修改删除等 -->
+<script setup lang="ts">
+
+</script>
+
 <template>
-    <div class="manageContainer">
-        <h1>manageContainer</h1> 
-    </div>
+  <h1>
+default content
+  </h1>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
 
 </style>
