@@ -1,261 +1,297 @@
+<script setup lang="ts">
+import { ref } from 'vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import axios from 'axios'
+
+const textarea = ref('')
+import type { UploadFile } from 'element-plus'
+
+const fileList = ref<UploadFile[]>([])
+const imageUrl = ref('')
+const dialogVisible = ref(false)
+const submitting = ref(false)
+
+//处理图片删除
+const handleRemove = (file: UploadFile) => {
+  console.log('删除文件：', file)
+}
+//处理图片预览
+const handlePicturePreview = (file: UploadFile) => {
+  imageUrl.value = file.url || ''
+  dialogVisible.value = true
+}
+//上传前验证
+//验证格式
+const beforeUpload = (file: File) => {
+  const typeIsImage = file.type.startsWith('image/')
+  if (!typeIsImage) {
+    ElMessage.error('指挥官，暂时只接受图片示爱哦~')
+    return false
+  }
+  return true
+}
+//验证数量
+const handleExceed = () => {
+  ElMessage.warning("图片太多可是会显得很不专一哦，指挥官~")
+}
+//文件变化处理
+const handleFileChange = (file: UploadFile, currentFileList: UploadFile[]) => {
+  // fileList会自动更新，这里可以添加额外处理
+  console.log('文件列表更新:', currentFileList)
+}
+
+//提交表白
+const handleSubmit = async () => {
+  if (!textarea.value.trim()) {
+    ElMessage.warning('指挥官，对我无话可说吗......')
+    return
+  }
+  try {
+    await ElMessageBox.confirm(
+      '真的想对我说这些话吗',
+      '真的真的要对我说哦',
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '再想想', // 修正：改为 cancelButtonText
+        type: 'warning'
+      }
+    )
+    //设置提交状态
+    submitting.value = true
+
+    const formData = new FormData()
+    formData.append('content', textarea.value.trim())
+
+    fileList.value.forEach((file, index) => {
+      if (file.raw) {
+        formData.append('images', file.raw)
+      }
+    })
+    //发送请求
+    const response = await axios.post('/api/post', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      },
+      timeout: 30000
+    })
+    if (response.data.success) {
+      ElMessage.success("指挥官的声音，我好好听到了哦！")
+      handleCancel() // 修正：拼写错误
+    } else {
+      ElMessage.error("啊嘞，出了点问题……")
+    }
+
+  } catch (error: any) {
+    console.error('提交错误', error)
+
+    // 点击取消对话框
+    if (error === "cancel" || error?.action === 'cancel') {
+      return
+    }
+
+    // 处理API错误
+    if (error && error.response) {
+      // 服务器返回错误状态码
+      const status = error.response.status
+      if (status === 401) {
+        ElMessage.error('请先登录')
+      } else if (status === 413) {
+        ElMessage.error('上传文件过大')
+      } else if (status >= 500) {
+        ElMessage.error('服务器错误，请稍后重试')
+      } else {
+        ElMessage.error(error.response.data.message || `发布失败: ${status}`)
+      }
+    } else if (error && error.request) {
+      // 请求发出但没有收到响应
+      ElMessage.error('网络错误，请检查连接')
+    } else {
+      // 其他错误
+      ElMessage.error('发布失败，请重试')
+    }
+  } finally {
+    // 无论成功失败，都重置提交状态
+    submitting.value = false
+  }
+}
+
+const handleCancel = () => {
+  // 清空文本内容
+  textarea.value = ''
+  // 清空文件列表
+  fileList.value = []
+  // 给出提示
+  ElMessage.info('已取消发布')
+}
+</script>
+
 <template>
-  <div class="post-container">
-    <el-card>
-      <div slot="header"> 
-        <h2>发布誓约</h2>
-      </div>
-      <el-form :model="postForm" :rules="rules" ref="postFormRef" label-width="80px">
-        <el-form-item label="誓词" prop="content">
-          <el-input
-            type="textarea"
-            v-model="postForm.content"
-            placeholder="当人们听着同一首音乐时，心境会不会向着同一个方向趋近呢……指挥官，要试试吗？"
-            :rows="5"
-          ></el-input>
+  <h2>
+    发布誓约
+  </h2>
 
-          <!-- 图片上传组件 -->
-          <el-upload
-            action="#"                 
-            list-type="picture-card"  
-            :on-preview="handlePicturePreview"  
-            :on-remove="handleRemove" 
-            :before-upload="beforeUpload"  
-            :file-list="fileList"      
-            :limit="9"              
-            :on-exceed="handleExceed"  
-            :auto-upload="false"       
-            :on-change="handleFileChange"
-          >
-            <el-icon><Plus /></el-icon>
-
-            <template #file="{ file }">
-              <div>
-                <img
-                  class="el-upload-list__item-thumbnail"
-                  :src="file.url"  
-                  alt=""
-                />
-                <span class="el-upload-list__item-actions">
-                  <span
-                    class="el-upload-list__item-preview"
-                    @click.stop="handlePicturePreview(file)" 
-                  >
-                    <el-icon><ZoomIn /></el-icon>
-                  </span>
-                  <span
-                    class="el-upload-list__item-delete"
-                    @click.stop="handleRemove(file)"  
-                  >
-                    <el-icon><Delete /></el-icon>
-                  </span>
-                </span>
-              </div>
-            </template>
-          </el-upload>
-          <div class="upload-tip">最多上传9张图片</div>
-
-          <!-- 图片预览弹窗 -->
-          <el-dialog 
-            v-model="dialogVisible"  
-            title="预览图片"        
-            :close-on-click-modal="false"  
-          >
-            <img 
-              width="100%" 
-              :src="dialogImageUrl"  
-              alt="预览图片" 
-            />
-          </el-dialog>
-         </el-form-item>
-
-        <el-form-item>
-          <el-checkbox v-model="postForm.isAnonymous">匿名发布</el-checkbox>
-        </el-form-item>
-        <el-form-item>
-          <el-checkbox v-model="postForm.isPublic">公开可见（取消则仅自己可见）</el-checkbox>
-        </el-form-item>
-
-        <el-form-item>
-          <el-button type="primary" @click="handleSubmit">向世界表达爱意</el-button>
-          <el-button @click="handleCancel">俺不中嘞</el-button>
-        </el-form-item>
-      </el-form>
-    </el-card>
+  <div class="postpage">
+    <!-- 文本区域 -->
+    <div class="showlove">
+      <el-input v-model="textarea" 
+      style="width: 700px" 
+      :rows="3" 
+      type="textarea"
+      placeholder="当人们听着同一首音乐时，心境会不会向着同一个方向趋近呢……指挥官，要试试吗？" />
+    </div>
+    <!-- 上传图片 -->
+    <div class="image-upload">
+      <el-upload 
+        action="/api/post" 
+        list-type="picture-card" 
+        :on-preview="handlePicturePreview" 
+        :on-remove="handleRemove"
+        :before-upload="beforeUpload" 
+        v-model:file-list="fileList" 
+        :limit="9" 
+        :on-exceed="handleExceed" 
+        :auto-upload="false"
+        :on-change="handleFileChange">
+        <div class="upload-placeholder">
+          <el-icon><Plus /></el-icon>
+          <span>在此添加图片</span>
+        </div>
+      </el-upload>
+      
+      <el-dialog v-model="dialogVisible" title="图片预览">
+        <img :src="imageUrl" alt="预览图片" style="width: 100%" />
+      </el-dialog>
+    </div>
+    <!-- 按钮区域 -->
+    <div class="submit-button">
+      <el-button type="success" plain @click="handleSubmit" :loading="submitting">是否在此表达爱意</el-button>
+      <el-button type="danger" plain @click="handleCancel">俺不中嘞</el-button>
+    </div>
   </div>
 </template>
 
-<script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { usePostStore } from '../stores/post'
-import { useRouter } from 'vue-router'
-import { ElMessage, ElMessageBox, ElNotification } from 'element-plus'
-import { Plus, ZoomIn, Delete } from '@element-plus/icons-vue'
-import type { UploadFile, UploadProps } from 'element-plus'
-
-const postStore = usePostStore()
-const router = useRouter()
-const postFormRef = ref()
-
-// 表单数据
-const postForm = ref({
-  content: '',
-  isAnonymous: false,
-  isPublic: true,
-  images: [] as string[] // 存储图片的base64
-})
-
-// 上传文件列表 - 严格类型定义
-const fileList = ref<UploadFile[]>([])
-const dialogVisible = ref(false)
-const dialogImageUrl = ref('')
-
-// 表单验证规则
-const rules = ref({
-  content: [
-    { required: true, message: '请输入表白内容', trigger: 'blur' },
-    { min: 1, max: 500, message: '内容长度在 1 到 500 个字符', trigger: 'blur' }
-  ]
-})
-
-// 处理图片预览
-const handlePicturePreview = (file: UploadFile) => {
-  dialogImageUrl.value = file.url ?? ''
-  dialogVisible.value = true
-}
-
-// 处理图片移除 - 关键修复
-const handleRemove: UploadProps['onRemove'] = (file, fileList) => {
-  ElMessageBox.confirm(
-    '确定删除这张图片吗？',
-    '确认删除',
-    {
-      confirmButtonText: '确认',
-      cancelButtonText: '取消',
-      type: 'warning'
-    }
-  ).then(() => {
-    // 1. 找到要删除的文件索引 (使用uid精确匹配)
-    const index = fileList.value.findIndex(item => item.uid === file.uid)
-    
-    if (index !== -1) {
-      // 2. 从文件列表中移除
-      fileList.value.splice(index, 1)
-      
-      // 3. 从base64数组中移除对应的图片
-      postForm.value.images.splice(index, 1)
-      
-      // 4. 强制刷新文件列表 (解决响应式更新问题)
-      fileList.value = [...fileList.value]
-      
-      ElMessage.success('图片已成功删除')
-    }
-  }).catch(() => {
-    ElMessage.info('已取消删除')
-  })
-}
-
-// 处理文件超出限制
-const handleExceed = () => {
-  ElNotification.warning({
-    title: '提示',
-    message: '最多只能上传9张图片'
-  })
-}
-
-// 处理文件变化 - 新增的同步机制
-const handleFileChange: UploadProps['onChange'] = (file, fileList) => {
-  // 保持fileList同步
-  fileList.value = fileList
-}
-
-// 上传前处理 - 改进的uid生成
-const beforeUpload = (rawFile: File) => {
-  // 检查文件类型
-  const isImage = rawFile.type.startsWith('image/')
-  if (!isImage) {
-    ElMessage.error('只能上传图片文件!')
-    return false
-  }
-
-  // 检查文件大小 (限制10MB以内)
-  const isLt10M = rawFile.size / 1024 / 1024 < 10
-  if (!isLt10M) {
-    ElMessage.error('图片大小不能超过10MB!')
-    return false
-  }
-
-  // 将图片转为base64
-  const reader = new FileReader()
-  reader.readAsDataURL(rawFile)
-  reader.onload = (e) => {
-    const base64Str = e.target?.result as string
-    // 生成唯一uid (改进版)
-    const uid = 'img_' + Date.now() + '_' + Math.floor(Math.random() * 10000)
-    fileList.value.push({
-      name: rawFile.name,
-      url: base64Str,
-      uid: uid,
-      status: 'success' // 标记为已上传状态
-    })
-    // 同步到表单数据
-    postForm.value.images.push(base64Str)
-    // 强制刷新
-    fileList.value = [...fileList.value]
-  }
-  
-  // 阻止自动上传
-  return false
-}
-
-// 提交表单
-const handleSubmit = () => {
-  postFormRef.value.validate((valid: boolean) => {
-    if (valid) {
-      const success = postStore.createPost(postForm.value)
-      if (success) {
-        ElMessage.success('发布成功')
-        router.push('/')
-      } else {
-        ElMessage.error('发布失败，请重试')
-      }
-    }
-  })
-}
-
-// 取消
-const handleCancel = () => {
-  router.back()
-}
-
-onMounted(() => {
-  postStore.initPosts()
-})
-</script>
-
-<style scoped>
-.post-container {
+<style lang="scss" scoped>
+.postpage {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
   max-width: 800px;
-  margin: 20px auto;
-  padding: 0 20px;
+  margin: 2rem auto;
+  padding: 2rem;
+  box-sizing: border-box;
+  background-color: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
 }
 
-.upload-tip {
-  margin-top: 10px;
-  color: #606266;
-  font-size: 12px;
-}
-
-::v-deep .el-upload-list--picture-card .el-upload-list__item {
-  width: 100px;
-  height: 100px;
-}
-
-/* 确保删除按钮可点击区域足够大 */
-::v-deep .el-upload-list__item-delete {
-  width: 100%;
-  height: 50%;
+h2 {
   display: flex;
   align-items: center;
   justify-content: center;
+  margin: 0 0 1rem;
+  font-size: 1.8rem;
+  color: #2c3e50;
+  position: relative;
+  padding-bottom: 0.8rem;
+
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60px;
+    height: 3px;
+    background-color: #42b983;
+    border-radius: 3px;
+  }
+}
+
+.showlove {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+
+  .el-input {
+    width: 100% !important;
+    transition: all 0.3s ease;
+
+    &:hover {
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+    }
+  }
+}
+
+.image-upload {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 1.5rem;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+
+  &:hover {
+    background-color: #f1f3f5;
+  }
+
+  .el-upload {
+    width: 100%;
+  }
+  
+  .upload-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+  }
+}
+
+.submit-button {
+  margin-top: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+
+  .el-button {
+    padding: 0.6rem 2rem;
+    font-size: 1rem;
+    transition: all 0.2s ease;
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    &:active {
+      transform: translateY(0);
+    }
+  }
+}
+
+// 响应式调整
+@media (max-width: 768px) {
+  .postpage {
+    margin: 1rem;
+    padding: 1.5rem;
+    gap: 1.5rem;
+  }
+
+  h2 {
+    font-size: 1.5rem;
+  }
+
+  .submit-button {
+    flex-direction: column;
+    gap: 1rem;
+
+    .el-button {
+      width: 100%;
+    }
+  }
 }
 </style>
