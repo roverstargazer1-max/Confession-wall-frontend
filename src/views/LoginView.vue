@@ -99,6 +99,7 @@ const handleLogin = async () => {
         
         ElMessage.success('登录成功！')
         router.push('/home')
+        console.log('user_id是',response.data.user_id)
 
       } 
       else {

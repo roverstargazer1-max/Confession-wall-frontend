@@ -17,7 +17,7 @@ const passwordFormRef = ref() // 用于获取表单实例
 const nameFormRef =ref()
 
 const passwordForm = reactive({
-  orginpassword: '',
+  originpassword: '',
   newPassword: '',
   confirmPassword: ''
 })
@@ -26,11 +26,12 @@ const handleProfileSave = async () => {
   try{
     await nameFormRef.value.validate()
     try {
-      const params = { newname: newnameForm.newname, user_id: userStore.userInfo.id }
+      const params = { newname: newnameForm.newname, user_id: userStore.userInfo.user_id }
       await reviseNameApi(params)
       ElMessage.success('昵称修改成功！')
       // 更新 pinia 中的用户信息
       userStore.userInfo.name = newnameForm.newname
+      localStorage.setItem('userInfo', JSON.stringify(userStore.userInfo))
     } catch (error) {
       ElMessage.error('昵称修改失败')
     }
@@ -46,7 +47,7 @@ const handlePasswordChange = async () => {
 
     // 步骤 2: 只有验证成功才会执行这里
     try {
-      const params = { newpassword: passwordForm.newPassword, user_id: userStore.userInfo.id , orginpassword:passwordForm.orginpassword}
+      const params = { newpassword: passwordForm.newPassword, user_id: userStore.userInfo.user_id , originpassword:passwordForm.originpassword}
       const Response = await revisePasswApi(params)
       if(Response.data.code === 200){
         
@@ -90,7 +91,7 @@ const validateConfirmPassword = (rule: any, value: any, callback: any) => {
   }
 }
 const passwordRules = reactive({
-  orginpassword: [
+  originpassword: [
     { required: true, message: '请输入原密码', trigger: 'blur' }
   ],
   newPassword: [
@@ -119,7 +120,7 @@ const handleUpload = async (options: any) => {
   const formData = new FormData()
 
   // 添加字段
-  formData.append('user_id', userStore.userInfo.id)
+  formData.append('user_id', userStore.userInfo.user_id)
   formData.append('picture', options.file)
 
   // 调用 API 并处理结果
@@ -137,6 +138,7 @@ const handleUpload = async (options: any) => {
 
       // 【核心步骤】将新的头像 URL 更新到 Pinia Store 中
       userStore.userInfo.portrait = newAvatarUrl
+      
       
     } else {
       ElMessage.error(response.data.msg || '头像上传失败')
@@ -203,8 +205,8 @@ const handleUpload = async (options: any) => {
         status-icon
         label-position="left"
       >
-        <el-form-item label="原密码" prop="orginpassword">
-          <el-input  v-model="passwordForm.orginpassword" type="password" show-password />
+        <el-form-item label="原密码" prop="originpassword">
+          <el-input  v-model="passwordForm.originpassword" type="password" show-password />
         </el-form-item>
 
         <el-form-item label="新密码" prop="newPassword">

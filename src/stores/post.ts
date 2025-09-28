@@ -14,14 +14,14 @@ export const usePostStore = defineStore('post', {
     myPosts: (state) => {
       const userStore = useUserStore()
       if (!userStore.userInfo) return []
-      return state.posts.filter(post => post.authorId === userStore.userInfo.id)
+      return state.posts.filter(post => post.authorId === userStore.userInfo.user_id)
     },
     // 获取公开的帖子（首页展示）
     publicPosts: (state) => {
       const userStore = useUserStore()
       return state.posts.filter(post => {
         // 公开的帖子，或者是当前用户自己的非公开帖子
-        return post.isPublic || (userStore.userInfo && post.authorId === userStore.userInfo.id)
+        return post.isPublic || (userStore.userInfo && post.authorId === userStore.userInfo.user_id)
       })
     }
   },
@@ -45,7 +45,7 @@ export const usePostStore = defineStore('post', {
       const newPost: Post = {
         ...postData,
         id: Date.now().toString(),
-        authorId: userStore.userInfo.id,
+        authorId: userStore.userInfo.user_id,
         authorName: postData.isAnonymous ? '匿名用户' : userStore.userInfo.username,
         createdAt: new Date().toISOString()
       }
@@ -63,7 +63,7 @@ updatePost(id: string, postData: Partial<Omit<Post, 'id' | 'createdAt' | 'author
   if (index === -1) return false // 没找到帖子，更新失败
 
   // 检查：只有帖子作者能更新
-  if (this.posts[index].authorId !== userStore.userInfo.id) return false
+  if (this.posts[index].authorId !== userStore.userInfo.user_id) return false
 
   // 构造“更新后的帖子”：原帖子 + 新数据 + 更新时间 + 处理作者名
   this.posts[index] = {
@@ -85,7 +85,7 @@ deletePost(id: string) {
   if (index === -1) return false // 没找到帖子，删除失败
 
   // 检查：只有帖子作者能删除
-  if (this.posts[index].authorId !== userStore.userInfo.id) return false
+  if (this.posts[index].authorId !== userStore.userInfo.user_id) return false
 
   this.posts.splice(index, 1) // 从数组中删除该帖子
   this.savePosts() // 保存到本地

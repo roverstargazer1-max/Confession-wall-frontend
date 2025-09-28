@@ -28,15 +28,7 @@ export const useUserStore = defineStore('user', () => {
 //             {}
 //         ],
 //         "portrait": {
-//             "id": 0,
-//             "width": 0,
-//             "height": 0,
-//             "featurecode": 0,
-//             "pixel": [
-//                 [
-//                     0
-//                 ]
-//             ]
+//             
 //         },
 //         "type": 0
 //     }

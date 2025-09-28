@@ -5,19 +5,26 @@ import { useConfirm } from '@/utils/useConfirm'
 import { ElMessage } from 'element-plus'
 import { useUserStore } from '@/stores/user' 
 import { computed } from 'vue'
-
-
+//http://172.20.10.2:8080/images/aaa.png
+//https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png
 // 获取到 userStore 函数
 const userStore = useUserStore()
 //获得用户昵称
 const name = computed(()=> userStore.userInfo.name)
 
-// 【新增】创建一个计算属性来获取头像 URL
-// 如果 store 中没有头像地址，就使用一个默认的头像作为备选
 const avatarUrl = computed(() => {
-  const defaultAvatar = 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png'
-  return userStore.userInfo.portrait || defaultAvatar
-})
+  const defaultAvatar = 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png';
+  const portraitData = userStore.userInfo.portrait;
+
+  // 如果 portraitData 是一个非空字符串，就直接使用它
+  // Base64 字符串以 "data:" 开头
+  if (typeof portraitData === 'string' && portraitData.startsWith('data:')) {
+    return portraitData;
+  }
+
+  // 其他所有情况，都使用默认头像
+  return defaultAvatar;
+});
 // 获取到 showConfirm 函数
 const { showConfirm } = useConfirm()
 
