@@ -1,86 +1,129 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import axios from 'axios'
 
-function resetForm() {
-  textarea.value = ''
-  fileList.value = []
-}
-
 const textarea = ref('')
-const fileList = ref<any[]>([])
-const isSubmitting = ref(false)
+import type { UploadFile } from 'element-plus'
 
-//图片上传
-const handlePicturePreview = (file: any) => {
-  console.log('预览图片：', file)
-}
-const handleRemove = (file: any, fileList: any[]) => {
-  console.log('移除图片:', file)
-}
+const fileList = ref<UploadFile[]>([])
+const imageUrl = ref('')
+const dialogVisible = ref(false)
+const submitting = ref(false)
 
-const handleFileChange = (file: any, fileList: any[]) => {
-  fileList.value = fileList
-  console.log('文件变化:', file, fileList)
+//处理图片删除
+const handleRemove = (file: UploadFile) => {
+  console.log('删除文件：', file)
 }
-
-//图片验证
-// 上传前验证
+//处理图片预览
+const handlePicturePreview = (file: UploadFile) => {
+  imageUrl.value = file.url || ''
+  dialogVisible.value = true
+}
+//上传前验证
+//验证格式
 const beforeUpload = (file: File) => {
-  // 1. 验证文件类型
-  const isJPGOrPNG = file.type === 'image/jpeg' || file.type === 'image/png'
-  if (!isJPGOrPNG) {
-    ElMessage.error('只能上传JPG/PNG格式的图片!')
-    return false  // 阻止上传
+  const typeIsImage = file.type.startsWith('image/')
+  if (!typeIsImage) {
+    ElMessage.error('指挥官，暂时只接受图片示爱哦~')
+    return false
   }
-
-  // 2. 验证文件大小（限制5MB）
-  const isLt5M = file.size / 1024 / 1024 < 5
-  if (!isLt5M) {
-    ElMessage.error('图片大小不能超过5MB!')
-    return false  // 阻止上传
-  }
-
-  return true  // 验证通过，允许上传
+  return true
+}
+//验证数量
+const handleExceed = () => {
+  ElMessage.warning("图片太多可是会显得很不专一哦，指挥官~")
+}
+//文件变化处理
+const handleFileChange = (file: UploadFile, currentFileList: UploadFile[]) => {
+  // fileList会自动更新，这里可以添加额外处理
+  console.log('文件列表更新:', currentFileList)
 }
 
-// 处理文件超出限制（最多9张）
-const handleExceed = (files: any[], fileList: any[]) => {
-  ElMessage.warning(`最多只能上传9张图片，本次已忽略${files.length}张`)
-}
-
-//取消编辑（作用于“俺不中嘞”）
-const handleCancel = async () => {
-  // 语义化变量：判断是否有未保存的内容
-  const changesUnsaved = Boolean(textarea.value || fileList.value.length)
-  if (!changesUnsaved) {
-    resetForm()
+//提交表白
+const handleSubmit = async () => {
+  if (!textarea.value.trim()) {
+    ElMessage.warning('指挥官，对我无话可说吗......')
     return
   }
   try {
     await ElMessageBox.confirm(
-      '确定要放弃编辑吗？已输入的内容将会丢失。',
-      '确认放弃', // 对话框标题
+      '真的想对我说这些话吗',
+      '真的真的要对我说哦',
       {
-        confirmButtonText: '确认',
-        cancelButtonText: '取消',
-        type: 'warning' // 警告类型，显示对应图标
+        confirmButtonText: '确定',
+        cancelButtonText: '再想想', // 修正：改为 cancelButtonText
+        type: 'warning'
       }
     )
-    // 用户确认后：重置表单并提示
-    resetForm()
-    ElMessage.info('已取消编辑')
-  } catch (error) {
-    // 用户取消操作（无需处理，静默退出）
-    return
+    //设置提交状态
+    submitting.value = true
+
+    const formData = new FormData()
+    formData.append('content', textarea.value.trim())
+
+    fileList.value.forEach((file, index) => {
+      if (file.raw) {
+        formData.append('images', file.raw)
+      }
+    })
+    //发送请求
+    const response = await axios.post('/api/post', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      },
+      timeout: 30000
+    })
+    if (response.data.success) {
+      ElMessage.success("指挥官的声音，我好好听到了哦！")
+      handleCancel() // 修正：拼写错误
+    } else {
+      ElMessage.error("啊嘞，出了点问题……")
+    }
+
+  } catch (error: any) {
+    console.error('提交错误', error)
+
+    // 点击取消对话框
+    if (error === "cancel" || error?.action === 'cancel') {
+      return
+    }
+
+    // 处理API错误
+    if (error && error.response) {
+      // 服务器返回错误状态码
+      const status = error.response.status
+      if (status === 401) {
+        ElMessage.error('请先登录')
+      } else if (status === 413) {
+        ElMessage.error('上传文件过大')
+      } else if (status >= 500) {
+        ElMessage.error('服务器错误，请稍后重试')
+      } else {
+        ElMessage.error(error.response.data.message || `发布失败: ${status}`)
+      }
+    } else if (error && error.request) {
+      // 请求发出但没有收到响应
+      ElMessage.error('网络错误，请检查连接')
+    } else {
+      // 其他错误
+      ElMessage.error('发布失败，请重试')
+    }
+  } finally {
+    // 无论成功失败，都重置提交状态
+    submitting.value = false
   }
 }
 
-//提交表单
-
+const handleCancel = () => {
+  // 清空文本内容
+  textarea.value = ''
+  // 清空文件列表
+  fileList.value = []
+  // 给出提示
+  ElMessage.info('已取消发布')
+}
 </script>
-
 
 <template>
   <h2>
@@ -88,18 +131,40 @@ const handleCancel = async () => {
   </h2>
 
   <div class="postpage">
+    <!-- 文本区域 -->
     <div class="showlove">
-      <el-input v-model="textarea" style="width: 700px" :rows="3" type="textarea"
-        placeholder="当人们听着同一首音乐时，心境会不会向着同一个方向趋近呢……指挥官，要试试吗？" />
+      <el-input v-model="textarea" 
+      style="width: 700px" 
+      :rows="3" 
+      type="textarea"
+      placeholder="当人们听着同一首音乐时，心境会不会向着同一个方向趋近呢……指挥官，要试试吗？" />
     </div>
+    <!-- 上传图片 -->
     <div class="image-upload">
-      <el-upload action="#" list-type="picture-card" :on-preview="handlePicturePreview" :on-remove="handleRemove"
-        :before-upload="beforeUpload" :file-list="fileList" :limit="9" :on-exceed="handleExceed" :auto-upload="false"
-        :on-change="handleFileChange">在此添加图片
+      <el-upload 
+        action="/api/post" 
+        list-type="picture-card" 
+        :on-preview="handlePicturePreview" 
+        :on-remove="handleRemove"
+        :before-upload="beforeUpload" 
+        v-model:file-list="fileList" 
+        :limit="9" 
+        :on-exceed="handleExceed" 
+        :auto-upload="false"
+        :on-change="handleFileChange">
+        <div class="upload-placeholder">
+          <el-icon><Plus /></el-icon>
+          <span>在此添加图片</span>
+        </div>
       </el-upload>
+      
+      <el-dialog v-model="dialogVisible" title="图片预览">
+        <img :src="imageUrl" alt="预览图片" style="width: 100%" />
+      </el-dialog>
     </div>
+    <!-- 按钮区域 -->
     <div class="submit-button">
-      <el-button type="success" plain>是否在此表达爱意</el-button>
+      <el-button type="success" plain @click="handleSubmit" :loading="submitting">是否在此表达爱意</el-button>
       <el-button type="danger" plain @click="handleCancel">俺不中嘞</el-button>
     </div>
   </div>
@@ -174,6 +239,14 @@ h2 {
 
   .el-upload {
     width: 100%;
+  }
+  
+  .upload-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
   }
 }
 
