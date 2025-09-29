@@ -1,3 +1,5 @@
+<!-- 我试试写主页 -->
+
 <script setup lang="ts"></script>
 
 <template>
