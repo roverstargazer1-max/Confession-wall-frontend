@@ -1,27 +1,29 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import axios from 'axios'
+import { Plus } from '@element-plus/icons-vue'
+import type { UploadFile } from 'element-plus'
+import request from '@/utils/request'
 
 const textarea = ref('')
-import type { UploadFile } from 'element-plus'
-
 const fileList = ref<UploadFile[]>([])
 const imageUrl = ref('')
 const dialogVisible = ref(false)
 const submitting = ref(false)
+const isAnonymous = ref(false) // 匿名发布状态
 
-//处理图片删除
+// 处理图片删除
 const handleRemove = (file: UploadFile) => {
   console.log('删除文件：', file)
 }
-//处理图片预览
+
+// 处理图片预览
 const handlePicturePreview = (file: UploadFile) => {
   imageUrl.value = file.url || ''
   dialogVisible.value = true
 }
-//上传前验证
-//验证格式
+
+// 上传前验证格式
 const beforeUpload = (file: File) => {
   const typeIsImage = file.type.startsWith('image/')
   if (!typeIsImage) {
@@ -30,53 +32,69 @@ const beforeUpload = (file: File) => {
   }
   return true
 }
-//验证数量
+
+// 验证数量
 const handleExceed = () => {
   ElMessage.warning("图片太多可是会显得很不专一哦，指挥官~")
 }
-//文件变化处理
+
+// 文件变化处理
 const handleFileChange = (file: UploadFile, currentFileList: UploadFile[]) => {
-  // fileList会自动更新，这里可以添加额外处理
   console.log('文件列表更新:', currentFileList)
 }
 
-//提交表白
+// 获取匿名确认消息
+const getAnonymousConfirmMessage = () => {
+  if (isAnonymous.value) {
+    return '选择匿名后，其他用户将无法看到您的身份信息，确定要继续吗？'
+  }
+  return '真的想对我说这些话吗'
+}
+
+// 提交表白
 const handleSubmit = async () => {
   if (!textarea.value.trim()) {
     ElMessage.warning('指挥官，对我无话可说吗......')
     return
   }
+
   try {
     await ElMessageBox.confirm(
-      '真的想对我说这些话吗',
-      '真的真的要对我说哦',
+      getAnonymousConfirmMessage(),
+      isAnonymous.value ? '匿名发布确认' : '发布确认',
       {
         confirmButtonText: '确定',
-        cancelButtonText: '再想想', // 修正：改为 cancelButtonText
-        type: 'warning'
+        cancelButtonText: '再想想',
+        type: isAnonymous.value ? 'info' : 'warning'
       }
     )
-    //设置提交状态
+
     submitting.value = true
 
     const formData = new FormData()
     formData.append('content', textarea.value.trim())
+    formData.append('anonymous', isAnonymous.value ? 'true' : 'false')
 
-    fileList.value.forEach((file, index) => {
+    fileList.value.forEach((file) => {
       if (file.raw) {
         formData.append('images', file.raw)
       }
     })
-    //发送请求
-    const response = await axios.post('/api/post', formData, {
+
+    // 使用封装的 request 发送请求
+    const response = await request.post('/api/post', formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
       },
       timeout: 30000
     })
+
     if (response.data.success) {
-      ElMessage.success("指挥官的声音，我好好听到了哦！")
-      handleCancel() // 修正：拼写错误
+      const successMessage = isAnonymous.value 
+        ? "匿名表白已发送，我会好好珍藏这份心意哦！" 
+        : "指挥官的声音，我好好听到了哦！"
+      ElMessage.success(successMessage)
+      handleCancel()
     } else {
       ElMessage.error("啊嘞，出了点问题……")
     }
@@ -90,8 +108,7 @@ const handleSubmit = async () => {
     }
 
     // 处理API错误
-    if (error && error.response) {
-      // 服务器返回错误状态码
+    if (error?.response) {
       const status = error.response.status
       if (status === 401) {
         ElMessage.error('请先登录')
@@ -100,49 +117,45 @@ const handleSubmit = async () => {
       } else if (status >= 500) {
         ElMessage.error('服务器错误，请稍后重试')
       } else {
-        ElMessage.error(error.response.data.message || `发布失败: ${status}`)
+        ElMessage.error(error.response.data?.message || `发布失败: ${status}`)
       }
-    } else if (error && error.request) {
-      // 请求发出但没有收到响应
+    } else if (error?.request) {
       ElMessage.error('网络错误，请检查连接')
     } else {
-      // 其他错误
       ElMessage.error('发布失败，请重试')
     }
   } finally {
-    // 无论成功失败，都重置提交状态
     submitting.value = false
   }
 }
 
 const handleCancel = () => {
-  // 清空文本内容
   textarea.value = ''
-  // 清空文件列表
   fileList.value = []
-  // 给出提示
+  isAnonymous.value = false
   ElMessage.info('已取消发布')
 }
 </script>
 
 <template>
-  <h2>
-    发布誓约
-  </h2>
+  <h2>发布誓约</h2>
 
   <div class="postpage">
     <!-- 文本区域 -->
     <div class="showlove">
-      <el-input v-model="textarea" 
-      style="width: 700px" 
-      :rows="3" 
-      type="textarea"
-      placeholder="当人们听着同一首音乐时，心境会不会向着同一个方向趋近呢……指挥官，要试试吗？" />
+      <el-input 
+        v-model="textarea" 
+        style="width: 700px" 
+        :rows="3" 
+        type="textarea"
+        placeholder="当人们听着同一首音乐时，心境会不会向着同一个方向趋近呢……指挥官，要试试吗？" 
+      />
     </div>
+    
     <!-- 上传图片 -->
     <div class="image-upload">
       <el-upload 
-        action="/api/post" 
+        :action="`${request.defaults.baseURL}/api/post`"
         list-type="picture-card" 
         :on-preview="handlePicturePreview" 
         :on-remove="handleRemove"
@@ -151,7 +164,8 @@ const handleCancel = () => {
         :limit="9" 
         :on-exceed="handleExceed" 
         :auto-upload="false"
-        :on-change="handleFileChange">
+        :on-change="handleFileChange"
+      >
         <div class="upload-placeholder">
           <el-icon><Plus /></el-icon>
           <span>在此添加图片</span>
@@ -162,10 +176,38 @@ const handleCancel = () => {
         <img :src="imageUrl" alt="预览图片" style="width: 100%" />
       </el-dialog>
     </div>
+    
+    <!-- 匿名选项 -->
+    <div class="anonymous-option">
+      <el-checkbox v-model="isAnonymous" label="匿名发布" size="large">
+        <span class="anonymous-label">悄悄说出心里话</span>
+        <el-tooltip
+          content="像给我个惊喜吗？最喜欢指挥官啦"
+          placement="top"
+        >
+          <el-icon class="tip-icon"><InfoFilled /></el-icon>
+        </el-tooltip>
+      </el-checkbox>
+      <div v-if="isAnonymous" class="anonymous-tip">
+        <el-icon><View /></el-icon>
+        <span>将以"神秘指挥官"的身份发布</span>
+      </div>
+    </div>
+    
     <!-- 按钮区域 -->
     <div class="submit-button">
-      <el-button type="success" plain @click="handleSubmit" :loading="submitting">是否在此表达爱意</el-button>
-      <el-button type="danger" plain @click="handleCancel">俺不中嘞</el-button>
+      <el-button 
+        type="success" 
+        plain 
+        @click="handleSubmit" 
+        :loading="submitting"
+        :class="{ 'anonymous-button': isAnonymous }"
+      >
+        {{ isAnonymous ? '匿名表达爱意' : '公开表达爱意' }}
+      </el-button>
+      <el-button type="danger" plain @click="handleCancel">
+        俺不中嘞
+      </el-button>
     </div>
   </div>
 </template>
@@ -250,6 +292,50 @@ h2 {
   }
 }
 
+.anonymous-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+
+  .anonymous-label {
+    font-weight: 500;
+    margin-right: 0.5rem;
+  }
+
+  .tip-icon {
+    color: #6c757d;
+    cursor: help;
+    margin-left: 0.25rem;
+  }
+
+  .anonymous-tip {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background-color: #e7f3ff;
+    border-radius: 6px;
+    color: #1890ff;
+    font-size: 0.9rem;
+
+    .el-icon {
+      font-size: 1rem;
+    }
+  }
+
+  :deep(.el-checkbox) {
+    .el-checkbox__label {
+      display: flex;
+      align-items: center;
+    }
+  }
+}
+
 .submit-button {
   margin-top: 1rem;
   display: flex;
@@ -271,6 +357,17 @@ h2 {
       transform: translateY(0);
     }
   }
+
+  .anonymous-button {
+    background: linear-gradient(135deg, #67c23a 0%, #85ce61 100%);
+    border-color: #67c23a;
+    color: white;
+
+    &:hover {
+      background: linear-gradient(135deg, #5daf34 0%, #78c25c 100%);
+      border-color: #5daf34;
+    }
+  }
 }
 
 // 响应式调整
@@ -283,6 +380,15 @@ h2 {
 
   h2 {
     font-size: 1.5rem;
+  }
+
+  .anonymous-option {
+    padding: 0.75rem;
+    
+    .anonymous-tip {
+      padding: 0.4rem 0.8rem;
+      font-size: 0.85rem;
+    }
   }
 
   .submit-button {
