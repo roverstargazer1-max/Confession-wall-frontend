@@ -1,33 +1,50 @@
-// src/types/index.ts
+// 帖子基础类型
 export interface Post {
   id: string;
   content: string;
-  isAnonymous: boolean; //是否匿名阀体
-  isPublic: boolean; //是否公开
-  authorId: string; //作者编号，其实改成userid也一样
-  authorName: string;
+  images: string[];
+  isAnonymous: boolean;
+  isPublic: boolean;
+  scheduledTime?: string;
   createdAt: string;
   updatedAt?: string;
-  images:string[]
+  authorId: string;
+  authorName: string;
+  likeCount?: number;
+  commentCount?: number;
 }
-export interface Confession {
-  id?: string;
+
+// API响应类型
+export interface ApiResponse<T = any> {
+  code: number;
+  data: T;
+  message: string;
+  success?: boolean;
+}
+
+// 创建帖子请求数据类型 - 用于FormData格式
+export interface CreatePostRequest {
   content: string;
-  anonymous: boolean;
+  images: File[]; // 改为File数组，直接上传文件
+  isAnonymous: boolean;
   isPublic: boolean;
-  images: string[]; // 图片URL数组
-  scheduledTime?: string; // 定时发送时间，ISO格式
-  createdAt?: string; // 创建时间
-  author?: string; // 作者，匿名时为null
+  scheduledTime?: string;
 }
 
-export interface ImageFile {
-  file: File;
-  url: string; // 临时URL用于预览
+// 上传图片类型
+export interface UploadImage {
+  url: string;
+  file?: File;
+  uid: string;
+  name?: string;
+  status?: 'success' | 'uploading' | 'error';
 }
 
-export enum PublishStatus {
-  DRAFT = 'draft',
-  SCHEDULED = 'scheduled',
-  PUBLISHED = 'published'
+// 发帖表单数据类型
+export interface PostFormData {
+  content: string;
+  isAnonymous: boolean;
+  isPublic: boolean;
+  scheduledTime: string | null;
+  images: UploadImage[];
 }

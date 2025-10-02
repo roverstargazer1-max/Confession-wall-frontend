@@ -1,95 +1,80 @@
 import { defineStore } from 'pinia'
-import type { Post } from '@/types'
+import type { Post, CreatePostRequest } from '@/types'
 import { useUserStore } from './user'
+import { confessionApi } from '@/api/postapi'
 
 export const usePostStore = defineStore('post', {
   state: () => ({
-    posts: [] as Post[]
+    posts: [] as Post[],
+    loading: false,
+    error: null as string | null
   }),
-  //创建一个叫post的仓库，
-  // 里面包含state（存数据）、getters（筛选 / 计算数据）、actions（处理业务逻辑）
-  //初始化一个空数组 posts，类型是 Post[]（即 “帖子类型的数组”，每个元素都符合Post的格式）
-  getters: {
-    // 获取当前用户的帖子
-    myPosts: (state) => {
-      const userStore = useUserStore()
-      if (!userStore.userInfo) return []
-      return state.posts.filter(post => post.authorId === userStore.userInfo.user_id)
-    },
-    // 获取公开的帖子（首页展示）
-    publicPosts: (state) => {
-      const userStore = useUserStore()
-      return state.posts.filter(post => {
-        // 公开的帖子，或者是当前用户自己的非公开帖子
-        return post.isPublic || (userStore.userInfo && post.authorId === userStore.userInfo.user_id)
-      })
-    }
-  },
+
   actions: {
-    // 初始化帖子数据（从localStorage加载）
-    initPosts() {
-      const postsStr = localStorage.getItem('posts')
-      if (postsStr) {
-        this.posts = JSON.parse(postsStr)
-      }
+    // 设置错误信息
+    setError(error: string | null) {
+      this.error = error
     },
-    // 保存帖子到localStorage
-    savePosts() {
-      localStorage.setItem('posts', JSON.stringify(this.posts))
+
+    // 设置加载状态
+    setLoading(loading: boolean) {
+      this.loading = loading
     },
-    // 创建新帖子
-    createPost(postData: Omit<Post, 'id' | 'createdAt' | 'authorId' | 'authorName'>) {
+
+    // 创建新帖子 - 结合API和本地状态
+    async createPost(postData: CreatePostRequest): Promise<boolean> {
       const userStore = useUserStore()
-      if (!userStore.userInfo) return false
-
-      const newPost: Post = {
-        ...postData,
-        id: Date.now().toString(),
-        authorId: userStore.userInfo.user_id,
-        authorName: postData.isAnonymous ? '匿名用户' : userStore.userInfo.username,
-        createdAt: new Date().toISOString()
+      if (!userStore.userInfo) {
+        this.setError('请先登录')
+        return false
       }
 
-      this.posts.unshift(newPost) // 添加到数组开头
-      this.savePosts()
-      return true
+      this.setLoading(true)
+      this.setError(null)
+
+      try {
+        // 创建FormData对象
+        const formData = new FormData()
+        
+        // 添加文本字段
+        formData.append('content', postData.content)
+        formData.append('isAnonymous', postData.isAnonymous.toString())
+        formData.append('isPublic', postData.isPublic.toString())
+        
+        // 添加定时发送时间（如果有）
+        if (postData.scheduledTime) {
+          formData.append('scheduledTime', postData.scheduledTime)
+        }
+        
+        // 添加图片文件
+        postData.images.forEach((file, index) => {
+          formData.append('images', file) // 使用相同的字段名，后端会接收数组
+        })
+
+        // 调用API创建帖子
+        const response = await confessionApi.createPost(formData)
+        
+        if (response.code === 200) {
+          // 将服务器返回的帖子添加到本地状态
+          const serverPost = response.data
+          this.posts.unshift(serverPost)
+          return true
+        } else {
+          this.setError(response.message || '创建帖子失败')
+          return false
+        }
+      } catch (error: any) {
+        this.setError(error.message || '创建帖子失败')
+        console.error('创建帖子失败:', error)
+        return false
+      } finally {
+        this.setLoading(false)
+      }
     },
-    // 更新帖子
-updatePost(id: string, postData: Partial<Omit<Post, 'id' | 'createdAt' | 'authorId' | 'authorName'>>) {
-  const userStore = useUserStore()
-  if (!userStore.userInfo) return false // 用户没登录，更新失败
 
-  const index = this.posts.findIndex(post => post.id === id) // 找要更新的帖子的位置
-  if (index === -1) return false // 没找到帖子，更新失败
-
-  // 检查：只有帖子作者能更新
-  if (this.posts[index].authorId !== userStore.userInfo.user_id) return false
-
-  // 构造“更新后的帖子”：原帖子 + 新数据 + 更新时间 + 处理作者名
-  this.posts[index] = {
-    ...this.posts[index],
-    ...postData,
-    updatedAt: new Date().toISOString(),
-    authorName: postData.isAnonymous ? '匿名用户' : userStore.userInfo.username
-  }
-
-  this.savePosts() // 保存到本地
-  return true // 更新成功
-},
-    // 删除帖子
-deletePost(id: string) {
-  const userStore = useUserStore()
-  if (!userStore.userInfo) return false // 用户没登录，删除失败
-
-  const index = this.posts.findIndex(post => post.id === id) // 找要删除的帖子位置
-  if (index === -1) return false // 没找到帖子，删除失败
-
-  // 检查：只有帖子作者能删除
-  if (this.posts[index].authorId !== userStore.userInfo.user_id) return false
-
-  this.posts.splice(index, 1) // 从数组中删除该帖子
-  this.savePosts() // 保存到本地
-  return true // 删除成功
+    // 清除错误
+    clearError() {
+      this.error = null
     }
   }
 })

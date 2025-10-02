@@ -36,7 +36,7 @@ const asideWidth = computed(() => isCollapse.value ? '65px' : '200px')
         <el-menu-item index="/home">
             <el-icon> <IEpHouse/> </el-icon>
             <span>首页</span>
-        </el-menu-item>
+        </el-menu-item>       
         <el-menu-item index="/management">
             <el-icon><IEpMessageBox /></el-icon>
             <span>个人主页</span>
