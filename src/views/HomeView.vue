@@ -1,12 +1,15 @@
 <script lang="ts" setup>
-import { onMounted } from 'vue'
+import { onMounted, ref } from 'vue'
 import { storeToRefs } from 'pinia'
-// 从 element-plus/icons-vue 导入 Thumb 图标
-import { Edit, ChatDotRound } from '@element-plus/icons-vue' 
+import { Edit, ChatDotRound, Promotion } from '@element-plus/icons-vue' // 引入 Promotion 图标
 import { useHomePostsStore } from '@/stores/homePosts'
+import type { Post } from '@/types/HomeType' // 引入 Post 类型
 
 const homePostsStore = useHomePostsStore()
 const { posts, isLoading, hasMore } = storeToRefs(homePostsStore)
+
+// 为每个帖子创建一个独立的评论输入框内容
+const newCommentText = ref<{ [key: number]: string }>({})
 
 onMounted(() => {
   if (posts.value.length === 0) {
@@ -18,9 +21,24 @@ const loadMore = () => {
   homePostsStore.fetchPosts()
 }
 
-// 处理点赞的函数，现在它调用 store action
 const handlePostLike = (postId: number) => {
   homePostsStore.toggleLikeStatus(postId)
+}
+
+// 【修改】点击评论图标时，调用 store action
+const handleCommentIconClick = (postId: number) => {
+  homePostsStore.toggleCommentSection(postId)
+}
+
+// 【新增】提交评论的处理函数
+const submitComment = async (post: Post) => {
+  const content = newCommentText.value[post.postId]
+  if (!content || !content.trim()) {
+    return;
+  }
+  await homePostsStore.addComment(post.postId, content)
+  // 成功后清空输入框
+  newCommentText.value[post.postId] = ''
 }
 </script>
 
@@ -45,12 +63,10 @@ const handlePostLike = (postId: number) => {
             <span class="hostname">{{ post.hostname }}</span>
           </div>
         </div>
-
         <div class="post-content">
           <h3 v-if="post.title" class="post-title">{{ post.title }}</h3>
           <p>{{ post.content }}</p>
         </div>
-
         <div
           v-if="post.pictures && post.pictures.length > 0"
           class="post-pictures"
@@ -72,20 +88,48 @@ const handlePostLike = (postId: number) => {
         </div>
 
         <div class="post-footer">
-          <div class="action-item">
+          <div class="action-item" @click="handleCommentIconClick(post.postId)">
             <el-button text>
                 <el-icon><ChatDotRound /></el-icon>
             </el-button>
             <span>{{ post.comments > 0 ? post.comments : '评论' }}</span>
           </div>
           
-          <div 
-            class="action-item" 
-            @click="handlePostLike(post.postId)"
-          >
-            <el-button text>{{ post.likes > 0 ? post.likes : '点赞' }}</el-button>
-            <span>❤️</span>
+          <div class="action-item" @click="handlePostLike(post.postId)">
+            <el-button text :style="{ color: post.liked ? 'red' : 'inherit' }">
+                ❤️
+            </el-button>
+            <span>{{ post.likes > 0 ? post.likes : '点赞' }}</span>
           </div>
+        </div>
+
+        <div v-if="post.showComments" class="comment-section">
+          <div class="comment-input-area">
+            <el-input
+              v-model="newCommentText[post.postId]"
+              placeholder="发布你的评论..."
+              :rows="2"
+              type="textarea"
+              resize="none"
+              @keyup.enter="submitComment(post)"
+            />
+            <el-button
+              type="primary"
+              :icon="Promotion"
+              circle
+              @click="submitComment(post)"
+            />
+          </div>
+          <div v-if="post.commentsData && post.commentsData.length > 0" class="comment-list">
+            <div v-for="comment in post.commentsData" :key="comment.subcommentId" class="comment-item">
+              <el-avatar :size="35" :src="comment.hostportrait.url" />
+              <div class="comment-content">
+                <span class="comment-hostname">{{ comment.hostname }}</span>
+                <p class="comment-text">{{ comment.content }}</p>
+              </div>
+            </div>
+          </div>
+          <p v-else class="no-comments">暂无评论</p>
         </div>
       </div>
 
@@ -96,6 +140,54 @@ const handlePostLike = (postId: number) => {
 </template>
 
 <style scoped lang="scss">
+
+/* 【新增】评论区样式 */
+.comment-section {
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 1px solid #f0f2f5;
+}
+
+.comment-input-area {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.comment-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.comment-item {
+  display: flex;
+  gap: 10px;
+}
+
+.comment-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.comment-hostname {
+  font-weight: bold;
+  font-size: 14px;
+  margin-bottom: 4px;
+}
+
+.comment-text {
+  margin: 0;
+  line-height: 1.5;
+  font-size: 14px;
+}
+
+.no-comments {
+  color: #909399;
+  font-size: 14px;
+}
+
 .home-container {
   max-width: 1000px;
   margin: 0 auto;
@@ -179,7 +271,7 @@ const handlePostLike = (postId: number) => {
   padding-top: 15px;
   border-top: 1px solid #ebeef5;
   display: flex;
-  justify-content: space-between; /* 两端对齐 */
+  justify-content: space-around; /* 改为 space-around 使其分布更均匀 */
   align-items: center;
   color: #8a919f;
 }
@@ -190,6 +282,7 @@ const handlePostLike = (postId: number) => {
   gap: 8px; /* 图标和文字的间距 */
   cursor: pointer;
   transition: color 0.2s;
+  font-size: 14px;
 }
 
 .action-item:hover {
