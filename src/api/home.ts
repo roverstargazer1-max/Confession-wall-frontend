@@ -13,3 +13,20 @@ export const homeGetApi = () => {
     method: 'get',
   })
 }
+//点赞接口
+export interface PostLike{
+  postId: number
+}
+export const postLikeApi = (params:PostLike) => {
+  const userStore = useUserStore()
+  const token = userStore.token
+  return request ({
+    "headers":{
+      "x-api-key": token,
+      "Content-Type": "application/json",
+    } ,
+    url: '/api/post/{postId}/like',
+    method: 'post',
+    data:params
+  })
+}

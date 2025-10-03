@@ -227,7 +227,7 @@ const handleUpload = async (options: any) => {
   </div>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
 .profile-container {
   max-width: 600px;
   margin: 20px auto;

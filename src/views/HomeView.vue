@@ -69,12 +69,11 @@ const loadMore = () => {
 
         <div class="post-footer">
           <div class="action-item">
-            <el-icon><ChatDotRound /></el-icon>
-            <span>{{ post.comments > 0 ? post.comments : '评论' }}</span>
+            <el-button text><el-icon><ChatDotRound /></el-icon></el-button><span>{{ post.comments > 0 ? post.comments : '评论' }}</span>
           </div>
           <div class="action-item" :class="{ liked: post.liked }">
             <el-icon><Thumb /></el-icon>
-            <span>{{ post.likes > 0 ? post.likes : '❤️点赞' }}</span>
+            <el-button text>❤️</el-button><span>{{ post.likes > 0 ? post.likes : '点赞' }}</span>
           </div>
         </div>
       </div>
@@ -85,7 +84,7 @@ const loadMore = () => {
   </div>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
 .home-container {
   max-width: 1000px;
   margin: 0 auto;
