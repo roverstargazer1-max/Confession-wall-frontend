@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { onMounted } from 'vue'
 import { storeToRefs } from 'pinia'
-// 【新增】从 element-plus/icons-vue 导入 Thumb 图标
+// 从 element-plus/icons-vue 导入 Thumb 图标
 import { Edit, ChatDotRound } from '@element-plus/icons-vue' 
 import { useHomePostsStore } from '@/stores/homePosts'
 
@@ -18,7 +18,7 @@ const loadMore = () => {
   homePostsStore.fetchPosts()
 }
 
-// 【修改】处理点赞的函数，现在它调用 store action
+// 处理点赞的函数，现在它调用 store action
 const handlePostLike = (postId: number) => {
   homePostsStore.toggleLikeStatus(postId)
 }
@@ -81,11 +81,10 @@ const handlePostLike = (postId: number) => {
           
           <div 
             class="action-item" 
-            :class="{ liked: post.liked }" 
             @click="handlePostLike(post.postId)"
           >
-            <el-button text>❤️</el-button>
-            <span>{{ post.likes > 0 ? post.likes : '点赞' }}</span>
+            <el-button text>{{ post.likes > 0 ? post.likes : '点赞' }}</el-button>
+            <span>❤️</span>
           </div>
         </div>
       </div>
@@ -195,11 +194,6 @@ const handlePostLike = (postId: number) => {
 
 .action-item:hover {
   color: #409eff;
-}
-
-/* 当 action-item 拥有 liked 类时，改变其颜色 */
-.action-item.liked {
-  color: #409eff; /* 已点赞状态的颜色 */
 }
 
 .loading-tip {

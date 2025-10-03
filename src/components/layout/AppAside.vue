@@ -1,11 +1,10 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-// 1. 引入 useRoute 来获取当前路由信息
 import { useRoute } from 'vue-router'
 
 const isCollapse = ref(false)
 
-// 2. 获取当前路由对象
+//  获取当前路由对象
 const route = useRoute()
 
 const handleOpen = (key: string, keyPath: string[]) => {
@@ -54,7 +53,6 @@ const asideWidth = computed(() => isCollapse.value ? '65px' : '200px')
 </template>
 
 <style lang="scss" scoped>
-/* 样式部分保持不变 */
 .el-aside{
     background-color: rgb(233, 233, 235);
     height: 100vh;

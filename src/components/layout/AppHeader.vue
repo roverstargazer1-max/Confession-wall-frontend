@@ -1,5 +1,4 @@
 <script setup lang="ts">
-// 1. 导入我们刚刚创建的组合式函数
 import router from '@/router'
 import { useConfirm } from '@/utils/useConfirm'
 import { ElMessage } from 'element-plus'
@@ -59,7 +58,6 @@ const leaveAccount = async () => {
 
     <el-dropdown>
         <span class="el-dropdown-link">
-        <!-- 后续需改为用户头像 -->
         <el-avatar :size="50" :src="avatarUrl" />
         </span>
         <template #dropdown>
