@@ -1,21 +1,8 @@
 import { defineStore } from 'pinia'
 import type { Post } from '@/types/HomeType'
-import { homeGetApi } from '@/api/home'
-// 模拟的 API 响应数据
-// const sampleApiResponse = {
-//     "code": 200,
-//     "msg": "OK",
-//     "data": [
-//         // ... 此处省略您提供的完整 data 数组 ...
-//         // 为了演示加载效果，我只保留几条
-//         { "id": 1, "host": 2, "title": "BiliBili的蜂群大家好!", "content": "10月舰长海报还在制作中~请蜂群耐心等待哦", "depth": 1, "hidden": false, "likes": 64, "comments": 3, "hostname": "Vedal和Neuro-sama", "hostportrait": { "width": 322, "height": 322, "url": "https://i.pravatar.cc/50?u=1" }, "subcomments": [], "pictures": [ { "width": 4, "height": 4, "url": "https://fuss10.elemecdn.com/a/3f/3302e58f9a181d2509f3dc0fa68b0jpeg.jpeg" }, { "width": 4, "height": 4, "url": "https://fuss10.elemecdn.com/1/34/19aa98b1fcb2781c4fba33d850549jpeg.jpeg" }, { "width": 4, "height": 4, "url": "https://fuss10.elemecdn.com/0/6f/e35ff375812e6b0020b6b4e8f9583jpeg.jpeg" } ], "liked": false },
-//         { "id": 3, "host": 2, "title": "刺杀小说家2周边", "content": "赤发鬼归位，双世危机再燃！《刺杀小说家2》周边众筹正式开冲！", "depth": 1, "hidden": false, "likes": 102, "comments": 15, "hostname": "哔哩哔哩会员购", "hostportrait": { "width": 322, "height": 322, "url": "https://i.pravatar.cc/50?u=2" }, "subcomments": null, "pictures": [ { "width": 322, "height": 322, "url": "https://fuss10.elemecdn.com/d/e6/c4d93a3805b3ce3f323f7974e6f78jpeg.jpeg" } ], "liked": true },
-//         // 更多数据...
-//     ]
-// };
-// src/stores/homePosts.ts
+import { homeGetApi, postLikeApi  } from '@/api/home'
+import { ElMessage } from 'element-plus'
 
-// 【修改】这个函数现在应该直接返回帖子数组
 const fetchPostsFromApi = async (page: number, limit: number): Promise<Post[]> => {
   console.log(`Fetching page ${page} with limit ${limit}`);
   try {
@@ -64,5 +51,42 @@ export const useHomePostsStore = defineStore('homePosts', {
         this.isLoading = false;
       }
     },
-  },
+    // 【新增】处理点赞/取消点赞的 action
+    async toggleLikeStatus(postId: number) {
+      // 1. 在 state 中找到要操作的帖子
+      const post = this.posts.find(p => p.postId === postId);
+      if (!post) {
+        console.error('未找到要点赞的帖子');
+        return;
+      }
+
+      // 先保存原始状态，然后立即修改 UI
+      const originalLiked = post.liked;
+      const originalLikes = post.likes;
+
+      if (originalLiked) {
+        // 如果已点赞，则取消点赞
+        post.liked = false;
+        post.likes--;
+      } else {
+        // 如果未点赞，则点赞
+        post.liked = true;
+        post.likes++;
+      }
+
+      // 3. 调用 API
+      try {
+        if (!originalLiked) {
+          // 调用点赞接口
+          await postLikeApi({ postId });;
+        } 
+      } catch (error) {
+        // 4. "回滚"：如果 API 调用失败，将 UI 状态恢复到原始状态
+        console.error('点赞操作失败:', error);
+        post.liked = originalLiked;
+        post.likes = originalLikes;
+        ElMessage.error('操作失败，请重试');
+      }
+    }
+  },  
 })

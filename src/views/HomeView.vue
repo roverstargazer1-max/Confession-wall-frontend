@@ -1,14 +1,13 @@
 <script lang="ts" setup>
 import { onMounted } from 'vue'
 import { storeToRefs } from 'pinia'
-import { Edit, ChatDotRound } from '@element-plus/icons-vue'
-import { useHomePostsStore } from '@/stores/homePosts' // 确保路径正确
+// 【新增】从 element-plus/icons-vue 导入 Thumb 图标
+import { Edit, ChatDotRound } from '@element-plus/icons-vue' 
+import { useHomePostsStore } from '@/stores/homePosts'
 
 const homePostsStore = useHomePostsStore()
-// 使用 storeToRefs 来保持响应性
 const { posts, isLoading, hasMore } = storeToRefs(homePostsStore)
 
-// 组件挂载时首次加载数据
 onMounted(() => {
   if (posts.value.length === 0) {
     homePostsStore.fetchPosts()
@@ -17,6 +16,11 @@ onMounted(() => {
 
 const loadMore = () => {
   homePostsStore.fetchPosts()
+}
+
+// 【修改】处理点赞的函数，现在它调用 store action
+const handlePostLike = (postId: number) => {
+  homePostsStore.toggleLikeStatus(postId)
 }
 </script>
 
@@ -39,7 +43,7 @@ const loadMore = () => {
           <el-avatar :size="50" :src="post.hostportrait.url" />
           <div class="user-info">
             <span class="hostname">{{ post.hostname }}</span>
-            </div>
+          </div>
         </div>
 
         <div class="post-content">
@@ -69,11 +73,19 @@ const loadMore = () => {
 
         <div class="post-footer">
           <div class="action-item">
-            <el-button text><el-icon><ChatDotRound /></el-icon></el-button><span>{{ post.comments > 0 ? post.comments : '评论' }}</span>
+            <el-button text>
+                <el-icon><ChatDotRound /></el-icon>
+            </el-button>
+            <span>{{ post.comments > 0 ? post.comments : '评论' }}</span>
           </div>
-          <div class="action-item" :class="{ liked: post.liked }">
-            <el-icon><Thumb /></el-icon>
-            <el-button text>❤️</el-button><span>{{ post.likes > 0 ? post.likes : '点赞' }}</span>
+          
+          <div 
+            class="action-item" 
+            :class="{ liked: post.liked }" 
+            @click="handlePostLike(post.postId)"
+          >
+            <el-button text>❤️</el-button>
+            <span>{{ post.likes > 0 ? post.likes : '点赞' }}</span>
           </div>
         </div>
       </div>
@@ -101,8 +113,9 @@ const loadMore = () => {
 }
 
 .posts-list {
-  height: calc(100vh - 200px); /* 示例高度 */
+  height: calc(100vh - 200px); /* 示例高度，确保可滚动 */
   overflow: auto;
+  padding-right: 10px; /* 防止滚动条遮挡内容 */
 }
 
 .post-card {
@@ -135,7 +148,7 @@ const loadMore = () => {
 .post-content p {
   line-height: 1.6;
   margin: 0;
-  white-space: pre-wrap; /* 保留文本换行 */
+  white-space: pre-wrap; /* 保留文本中的换行符 */
 }
 
 .post-pictures {
@@ -145,7 +158,7 @@ const loadMore = () => {
 }
 
 /* 动态网格布局，最多支持3x3 */
-.grid-1 { grid-template-columns: 1fr; }
+.grid-1 { grid-template-columns: minmax(0, 2fr); } /* 单张图稍大一些 */
 .grid-2 { grid-template-columns: repeat(2, 1fr); }
 .grid-3 { grid-template-columns: repeat(3, 1fr); }
 .grid-4 { grid-template-columns: repeat(2, 1fr); }
@@ -167,7 +180,7 @@ const loadMore = () => {
   padding-top: 15px;
   border-top: 1px solid #ebeef5;
   display: flex;
-  justify-content: space-between; /* 核心：两端对齐 */
+  justify-content: space-between; /* 两端对齐 */
   align-items: center;
   color: #8a919f;
 }
@@ -184,8 +197,9 @@ const loadMore = () => {
   color: #409eff;
 }
 
+/* 当 action-item 拥有 liked 类时，改变其颜色 */
 .action-item.liked {
-    color: #409eff; /* 已点赞状态的颜色 */
+  color: #409eff; /* 已点赞状态的颜色 */
 }
 
 .loading-tip {
