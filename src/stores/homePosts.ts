@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import type { Post, Comment } from '@/types/HomeType' 
-import { homeGetApi, postLikeApi, commentGetApi, commentPostApi } from '@/api/home'
+import { homeGetApi, postLikeApi, commentGetApi, commentPostApi, secondCommentApi, commentLikeApi } from '@/api/home'
 import { ElMessage } from 'element-plus'
 
 const fetchPostsFromApi = async (page: number, limit: number): Promise<Post[]> => {
@@ -68,7 +68,7 @@ export const useHomePostsStore = defineStore('homePosts', {
         }
     },
     
-    // 【新增】获取评论
+    // 获取评论
     async fetchComments(postId: number) {
       const post = this.posts.find(p => p.postId === postId);
       if (!post) return;
@@ -76,8 +76,12 @@ export const useHomePostsStore = defineStore('homePosts', {
       try {
         const res = await commentGetApi({ postId });
         if (res.data.code === 200) {
-          // 注意：根据你的接口文档截图，评论数据在 data.data
-          post.commentsData = res.data.data || [];
+          // 为每条评论添加 UI 控制属性
+          const commentsWithState = res.data.data.map((comment: Comment) => ({
+            ...comment,
+            showReply: false // 默认不显示回复框
+          }));
+          post.commentsData = commentsWithState || [];
         } else {
           ElMessage.error('加载评论失败');
         }
@@ -87,20 +91,16 @@ export const useHomePostsStore = defineStore('homePosts', {
       }
     },
 
-    // 【新增】切换评论区可见性
     async toggleCommentSection(postId: number) {
         const post = this.posts.find(p => p.postId === postId);
         if (!post) return;
 
         post.showComments = !post.showComments;
 
-        // 如果是展开评论区，并且评论数据为空，则去获取评论
         if (post.showComments && post.commentsData?.length === 0) {
             this.fetchComments(postId);
         }
     },
-
-    // 【新增】提交新评论
     async addComment(postId: number, content: string) {
         if (!content.trim()) {
             ElMessage.warning('评论内容不能为空');
@@ -111,7 +111,6 @@ export const useHomePostsStore = defineStore('homePosts', {
             const res = await commentPostApi({ postId, content });
             if (res.data.code === 200) {
                 ElMessage.success('评论成功');
-                // 评论成功后，重新获取该帖子的评论列表以显示最新评论
                 this.fetchComments(postId);
             } else {
                 ElMessage.error(res.data.msg || '评论失败');
@@ -120,6 +119,53 @@ export const useHomePostsStore = defineStore('homePosts', {
             console.error("评论失败:", error);
             ElMessage.error('评论失败');
         }
+    },
+
+    // 切换评论点赞状态
+    async toggleCommentLike(postId: number, commentId: number) {
+      const post = this.posts.find(p => p.postId === postId);
+      const comment = post?.commentsData.find(c => c.subcommentId === commentId);
+      if (!comment) return;
+
+      const originalLiked = comment.liked;
+      const originalLikes = comment.likes;
+      comment.liked = !comment.liked;
+      comment.likes += comment.liked ? 1 : -1;
+
+      try {
+        // 调用 API
+        await commentLikeApi({ commentId });
+      } catch (error) {
+        // 如果 API 调用失败，则回滚前端状态
+        comment.liked = originalLiked;
+        comment.likes = originalLikes;
+        ElMessage.error('点赞失败，请重试');
+      }
+    },
+
+    // 切换回复输入框的显示
+    toggleReplyBox(postId: number, commentId: number) {
+      const post = this.posts.find(p => p.postId === postId);
+      const comment = post?.commentsData.find(c => c.subcommentId === commentId);
+      if (comment) {
+        comment.showReply = !comment.showReply;
+      }
+    },
+
+    // 提交回复
+    async submitReply(postId: number, commentId: number, content: string) {
+      if (!content.trim()) {
+        ElMessage.warning('回复内容不能为空');
+        return;
+      }
+      try {
+        await secondCommentApi({ commentId, content });
+        ElMessage.success('回复成功');
+        // 回复成功后，刷新整个评论列表以显示最新回复
+        await this.fetchComments(postId);
+      } catch (error) {
+        ElMessage.error('回复失败，请重试');
+      }
     }
   },  
 })

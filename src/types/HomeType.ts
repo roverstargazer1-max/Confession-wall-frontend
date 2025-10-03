@@ -38,4 +38,6 @@ export interface Comment {
   content: string;
   likes: number;
   liked: boolean;
+  // 用于控制回复框的显示状态
+  showReply?: boolean;
 }

@@ -1,15 +1,18 @@
 <script lang="ts" setup>
 import { onMounted, ref } from 'vue'
 import { storeToRefs } from 'pinia'
-import { Edit, ChatDotRound, Promotion } from '@element-plus/icons-vue' // 引入 Promotion 图标
+// 引入更多图标，比如点赞
+import { Edit, ChatDotRound, Promotion, More, Present } from '@element-plus/icons-vue'
 import { useHomePostsStore } from '@/stores/homePosts'
-import type { Post } from '@/types/HomeType' // 引入 Post 类型
+import type { Post, Comment } from '@/types/HomeType' 
 
 const homePostsStore = useHomePostsStore()
 const { posts, isLoading, hasMore } = storeToRefs(homePostsStore)
 
-// 为每个帖子创建一个独立的评论输入框内容
+// 用于绑定帖子评论输入框的内容
 const newCommentText = ref<{ [key: number]: string }>({})
+// 【新增】用于绑定回复输入框的内容
+const replyTexts = ref<{ [key: number]: string }>({})
 
 onMounted(() => {
   if (posts.value.length === 0) {
@@ -25,21 +28,40 @@ const handlePostLike = (postId: number) => {
   homePostsStore.toggleLikeStatus(postId)
 }
 
-// 【修改】点击评论图标时，调用 store action
 const handleCommentIconClick = (postId: number) => {
   homePostsStore.toggleCommentSection(postId)
 }
 
-// 【新增】提交评论的处理函数
 const submitComment = async (post: Post) => {
   const content = newCommentText.value[post.postId]
   if (!content || !content.trim()) {
     return;
   }
   await homePostsStore.addComment(post.postId, content)
-  // 成功后清空输入框
   newCommentText.value[post.postId] = ''
 }
+
+// 处理评论点赞
+const handleCommentLike = (postId: number, commentId: number) => {
+  homePostsStore.toggleCommentLike(postId, commentId);
+};
+
+// 处理点击回复按钮
+const handleToggleReply = (postId: number, commentId: number) => {
+  homePostsStore.toggleReplyBox(postId, commentId);
+};
+
+// 处理提交回复
+const handleSubmitReply = async (postId: number, comment: Comment) => {
+  const content = replyTexts.value[comment.subcommentId];
+  if (!content) return;
+
+  await homePostsStore.submitReply(postId, comment.subcommentId, content);
+  
+  // 成功后清空输入框
+  replyTexts.value[comment.subcommentId] = '';
+};
+
 </script>
 
 <template>
@@ -86,7 +108,6 @@ const submitComment = async (post: Post) => {
             />
           </div>
         </div>
-
         <div class="post-footer">
           <div class="action-item" @click="handleCommentIconClick(post.postId)">
             <el-button text>
@@ -123,16 +144,34 @@ const submitComment = async (post: Post) => {
           <div v-if="post.commentsData && post.commentsData.length > 0" class="comment-list">
             <div v-for="comment in post.commentsData" :key="comment.subcommentId" class="comment-item">
               <el-avatar :size="35" :src="comment.hostportrait.url" />
-              <div class="comment-content">
-                <span class="comment-hostname">{{ comment.hostname }}</span>
-                <p class="comment-text">{{ comment.content }}</p>
+              <div class="comment-main">
+                <div class="comment-content">
+                  <span class="comment-hostname">{{ comment.hostname }}</span>
+                  <p class="comment-text">{{ comment.content }}</p>
+                </div>
+
+                <div class="comment-actions">
+                  <span class="action-btn" :class="{ 'liked': comment.liked }" @click="handleCommentLike(post.postId, comment.subcommentId)">
+                    <el-icon><Present /></el-icon> {{ comment.likes }}
+                  </span>
+                  <span class="action-btn" @click="handleToggleReply(post.postId, comment.subcommentId)">回复</span>
+                  <span class="action-btn">拉黑</span>
+                </div>
+
+                <div v-if="comment.showReply" class="reply-input-area">
+                   <el-input
+                      v-model="replyTexts[comment.subcommentId]"
+                      :placeholder="`回复 @${comment.hostname}`"
+                      size="small"
+                   />
+                   <el-button type="primary" size="small" @click="handleSubmitReply(post.postId, comment)">发送</el-button>
+                </div>
               </div>
             </div>
           </div>
           <p v-else class="no-comments">暂无评论</p>
         </div>
       </div>
-
       <p v-if="isLoading" class="loading-tip">加载中...</p>
       <p v-if="!hasMore && posts.length > 0" class="loading-tip">没有更多了</p>
     </div>
@@ -140,8 +179,6 @@ const submitComment = async (post: Post) => {
 </template>
 
 <style scoped lang="scss">
-
-/* 【新增】评论区样式 */
 .comment-section {
   margin-top: 15px;
   padding-top: 15px;
@@ -165,6 +202,9 @@ const submitComment = async (post: Post) => {
   display: flex;
   gap: 10px;
 }
+.comment-main {
+  flex: 1;
+}
 
 .comment-content {
   display: flex;
@@ -187,13 +227,11 @@ const submitComment = async (post: Post) => {
   color: #909399;
   font-size: 14px;
 }
-
 .home-container {
   max-width: 1000px;
   margin: 0 auto;
   padding: 20px;
 }
-
 .home-header {
   display: flex;
   justify-content: space-between;
@@ -202,13 +240,11 @@ const submitComment = async (post: Post) => {
   border-bottom: 1px solid #ebeef5;
   padding-bottom: 1rem;
 }
-
 .posts-list {
-  height: calc(100vh - 200px); /* 示例高度，确保可滚动 */
+  height: calc(100vh - 200px); 
   overflow: auto;
-  padding-right: 10px; /* 防止滚动条遮挡内容 */
+  padding-right: 10px; 
 }
-
 .post-card {
   background-color: #fff;
   border-radius: 8px;
@@ -216,22 +252,18 @@ const submitComment = async (post: Post) => {
   margin-bottom: 15px;
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
 }
-
 .post-header {
   display: flex;
   align-items: center;
   margin-bottom: 15px;
 }
-
 .user-info {
   margin-left: 15px;
 }
-
 .hostname {
   font-weight: bold;
   font-size: 16px;
 }
-
 .post-content .post-title {
   margin-top: 0;
   margin-bottom: 8px;
@@ -239,59 +271,80 @@ const submitComment = async (post: Post) => {
 .post-content p {
   line-height: 1.6;
   margin: 0;
-  white-space: pre-wrap; /* 保留文本中的换行符 */
+  white-space: pre-wrap;
 }
-
 .post-pictures {
   margin-top: 15px;
   display: grid;
   gap: 8px;
 }
-
-/* 动态网格布局，最多支持3x3 */
-.grid-1 { grid-template-columns: minmax(0, 2fr); } /* 单张图稍大一些 */
+.grid-1 { grid-template-columns: minmax(0, 2fr); }
 .grid-2 { grid-template-columns: repeat(2, 1fr); }
 .grid-3 { grid-template-columns: repeat(3, 1fr); }
 .grid-4 { grid-template-columns: repeat(2, 1fr); }
 .grid-5, .grid-6 { grid-template-columns: repeat(3, 1fr); }
 .grid-7, .grid-8, .grid-9 { grid-template-columns: repeat(3, 1fr); }
-
-
 .picture-item .el-image {
   width: 100%;
   height: 100%;
-  aspect-ratio: 1 / 1; /* 保持图片为正方形 */
+  aspect-ratio: 1 / 1;
   border-radius: 6px;
   object-fit: cover;
 }
-
-
 .post-footer {
   margin-top: 20px;
   padding-top: 15px;
   border-top: 1px solid #ebeef5;
   display: flex;
-  justify-content: space-around; /* 改为 space-around 使其分布更均匀 */
+  justify-content: space-around;
   align-items: center;
   color: #8a919f;
 }
-
 .action-item {
   display: flex;
   align-items: center;
-  gap: 8px; /* 图标和文字的间距 */
+  gap: 8px;
   cursor: pointer;
   transition: color 0.2s;
   font-size: 14px;
 }
-
 .action-item:hover {
   color: #409eff;
 }
-
 .loading-tip {
   text-align: center;
   color: #909399;
   padding: 20px;
+}
+
+/* --- 【以下为本次新增的样式】 --- */
+.comment-actions {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  font-size: 12px;
+  color: #909399;
+  margin-top: 8px;
+}
+
+.action-btn {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.action-btn:hover {
+  color: #409eff;
+}
+
+.action-btn.liked {
+  color: #409eff; /* 或者你喜欢的其他高亮颜色 */
+}
+
+.reply-input-area {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
 }
 </style>

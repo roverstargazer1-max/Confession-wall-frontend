@@ -59,11 +59,49 @@ export const commentPostApi = (params: CommentPost) => {
   return request({
     "headers":{
       "x-api-key": token,
+      "Content-Type": "application/json",
     },
-    url: `/api/comment/post/${params.postId}`, // 使用模板字符串替换路径参数
+    url: `/api/comment/post/${params.postId}`, 
+    method: 'post',
+    params: { 
+      content: params.content
+    }
+  })
+}
+//回复评论接口
+export interface secondComment {
+  commentId: number,
+  content: string
+}
+export const secondCommentApi = (params: secondComment) => {
+  const userStore = useUserStore()
+  const token = userStore.token
+  return request({
+    "headers":{
+      "x-api-key": token,
+      "Content-Type": "application/json",
+    },
+    url: `/api/comment/comment/${params.commentId}`, // 使用模板字符串替换路径参数
     method: 'post',
     params: { // 根据文档，content 是 Query 参数
       content: params.content
     }
+  })
+}
+
+//点赞评论接口
+export interface CommentLike{
+  commentId: number
+}
+export const commentLikeApi = (params: CommentLike) => {
+  const userStore = useUserStore()
+  const token = userStore.token
+  return request({
+    "headers":{
+      "x-api-key": token,
+      "Content-Type": "application/json",
+    },
+    url: `/api/comment/${params.commentId}/like`, // 使用模板字符串替换路径参数
+    method: 'post',
   })
 }
