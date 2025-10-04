@@ -155,7 +155,6 @@ const handleSubmitReply = async (postId: number, comment: Comment) => {
                     <el-icon><Present /></el-icon> {{ comment.likes }}
                   </span>
                   <span class="action-btn" @click="handleToggleReply(post.postId, comment.subcommentId)">回复</span>
-                  <span class="action-btn">拉黑</span>
                 </div>
 
                 <div v-if="comment.showReply" class="reply-input-area">
