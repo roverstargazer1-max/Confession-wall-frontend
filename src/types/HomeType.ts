@@ -1,5 +1,3 @@
-// src/types/HomeType.ts
-
 // API `/api/user/{id}` 返回的用户信息结构
 export interface User {
   id: number;
@@ -11,8 +9,6 @@ export interface User {
     height: number;
   } | null;
   type: number;
-  // 根据 UserProfile 页面需要，可以补充 bio 字段
-  bio?: string;
 }
 
 // 帖子/评论中使用的头像结构

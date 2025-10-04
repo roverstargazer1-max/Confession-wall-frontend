@@ -72,7 +72,7 @@ const handleSubmitReply = async (postId: number, comment: Comment) => {
     >
       <div v-for="post in posts" :key="post.postId" class="post-card">
         <div class="post-header">
-          <router-link :to="`/user/${post.host}`">
+          <router-link :to="`/user/${post.host}`" target="_blank">
             <el-avatar :size="50" :src="post.hostportrait.url" />
           </router-link>
           <div class="user-info">
@@ -137,7 +137,7 @@ const handleSubmitReply = async (postId: number, comment: Comment) => {
           </div>
           <div v-if="post.commentsData && post.commentsData.length > 0" class="comment-list">
             <div v-for="comment in post.commentsData" :key="comment.commentId" class="comment-item">
-              <router-link :to="`/user/${comment.host}`" class="hostname-link">
+              <router-link :to="`/user/${comment.host}`" class="hostname-link" target="_blank">
                 <el-avatar :size="35" :src="comment.hostportrait.url" />
               </router-link>
               <div class="comment-main">
