@@ -1,17 +1,14 @@
 <script lang="ts" setup>
 import { onMounted, ref } from 'vue'
 import { storeToRefs } from 'pinia'
-// 引入更多图标，比如点赞
-import { Edit, ChatDotRound, Promotion, More, Present } from '@element-plus/icons-vue'
+import { Edit, ChatDotRound, Promotion, Present } from '@element-plus/icons-vue'
 import { useHomePostsStore } from '@/stores/homePosts'
 import type { Post, Comment } from '@/types/HomeType' 
 
 const homePostsStore = useHomePostsStore()
 const { posts, isLoading, hasMore } = storeToRefs(homePostsStore)
 
-// 用于绑定帖子评论输入框的内容
 const newCommentText = ref<{ [key: number]: string }>({})
-// 【新增】用于绑定回复输入框的内容
 const replyTexts = ref<{ [key: number]: string }>({})
 
 onMounted(() => {
@@ -41,27 +38,22 @@ const submitComment = async (post: Post) => {
   newCommentText.value[post.postId] = ''
 }
 
-// 处理评论点赞
 const handleCommentLike = (postId: number, commentId: number) => {
   homePostsStore.toggleCommentLike(postId, commentId);
 };
 
-// 处理点击回复按钮
 const handleToggleReply = (postId: number, commentId: number) => {
   homePostsStore.toggleReplyBox(postId, commentId);
 };
 
-// 处理提交回复
 const handleSubmitReply = async (postId: number, comment: Comment) => {
-  const content = replyTexts.value[comment.subcommentId];
+  const content = replyTexts.value[comment.commentId]; // 使用 commentId
   if (!content) return;
 
-  await homePostsStore.submitReply(postId, comment.subcommentId, content);
+  await homePostsStore.submitReply(postId, comment.commentId, content);
   
-  // 成功后清空输入框
-  replyTexts.value[comment.subcommentId] = '';
+  replyTexts.value[comment.commentId] = '';
 };
-
 </script>
 
 <template>
@@ -80,7 +72,9 @@ const handleSubmitReply = async (postId: number, comment: Comment) => {
     >
       <div v-for="post in posts" :key="post.postId" class="post-card">
         <div class="post-header">
-          <el-avatar :size="50" :src="post.hostportrait.url" />
+          <router-link :to="`/user/${post.host}`">
+            <el-avatar :size="50" :src="post.hostportrait.url" />
+          </router-link>
           <div class="user-info">
             <span class="hostname">{{ post.hostname }}</span>
           </div>
@@ -142,8 +136,10 @@ const handleSubmitReply = async (postId: number, comment: Comment) => {
             />
           </div>
           <div v-if="post.commentsData && post.commentsData.length > 0" class="comment-list">
-            <div v-for="comment in post.commentsData" :key="comment.subcommentId" class="comment-item">
-              <el-avatar :size="35" :src="comment.hostportrait.url" />
+            <div v-for="comment in post.commentsData" :key="comment.commentId" class="comment-item">
+              <router-link :to="`/user/${comment.host}`" class="hostname-link">
+                <el-avatar :size="35" :src="comment.hostportrait.url" />
+              </router-link>
               <div class="comment-main">
                 <div class="comment-content">
                   <span class="comment-hostname">{{ comment.hostname }}</span>
@@ -151,15 +147,15 @@ const handleSubmitReply = async (postId: number, comment: Comment) => {
                 </div>
 
                 <div class="comment-actions">
-                  <span class="action-btn" :class="{ 'liked': comment.liked }" @click="handleCommentLike(post.postId, comment.subcommentId)">
+                  <span class="action-btn" :class="{ 'liked': comment.liked }" @click="handleCommentLike(post.postId, comment.commentId)">
                     <el-icon><Present /></el-icon> {{ comment.likes }}
                   </span>
-                  <span class="action-btn" @click="handleToggleReply(post.postId, comment.subcommentId)">回复</span>
+                  <span class="action-btn" @click="handleToggleReply(post.postId, comment.commentId)">回复</span>
                 </div>
 
                 <div v-if="comment.showReply" class="reply-input-area">
                    <el-input
-                      v-model="replyTexts[comment.subcommentId]"
+                      v-model="replyTexts[comment.commentId]"
                       :placeholder="`回复 @${comment.hostname}`"
                       size="small"
                    />
@@ -178,25 +174,23 @@ const handleSubmitReply = async (postId: number, comment: Comment) => {
 </template>
 
 <style scoped lang="scss">
+/* 样式部分无需修改，所以省略 */
 .comment-section {
   margin-top: 15px;
   padding-top: 15px;
   border-top: 1px solid #f0f2f5;
 }
-
 .comment-input-area {
   display: flex;
   align-items: center;
   gap: 10px;
   margin-bottom: 20px;
 }
-
 .comment-list {
   display: flex;
   flex-direction: column;
   gap: 15px;
 }
-
 .comment-item {
   display: flex;
   gap: 10px;
@@ -204,24 +198,20 @@ const handleSubmitReply = async (postId: number, comment: Comment) => {
 .comment-main {
   flex: 1;
 }
-
 .comment-content {
   display: flex;
   flex-direction: column;
 }
-
 .comment-hostname {
   font-weight: bold;
   font-size: 14px;
   margin-bottom: 4px;
 }
-
 .comment-text {
   margin: 0;
   line-height: 1.5;
   font-size: 14px;
 }
-
 .no-comments {
   color: #909399;
   font-size: 14px;
@@ -281,8 +271,7 @@ const handleSubmitReply = async (postId: number, comment: Comment) => {
 .grid-2 { grid-template-columns: repeat(2, 1fr); }
 .grid-3 { grid-template-columns: repeat(3, 1fr); }
 .grid-4 { grid-template-columns: repeat(2, 1fr); }
-.grid-5, .grid-6 { grid-template-columns: repeat(3, 1fr); }
-.grid-7, .grid-8, .grid-9 { grid-template-columns: repeat(3, 1fr); }
+.grid-5, .grid-6, .grid-7, .grid-8, .grid-9 { grid-template-columns: repeat(3, 1fr); }
 .picture-item .el-image {
   width: 100%;
   height: 100%;
@@ -315,8 +304,6 @@ const handleSubmitReply = async (postId: number, comment: Comment) => {
   color: #909399;
   padding: 20px;
 }
-
-/* --- 【以下为本次新增的样式】 --- */
 .comment-actions {
   display: flex;
   align-items: center;
@@ -325,22 +312,18 @@ const handleSubmitReply = async (postId: number, comment: Comment) => {
   color: #909399;
   margin-top: 8px;
 }
-
 .action-btn {
   cursor: pointer;
   display: flex;
   align-items: center;
   gap: 4px;
 }
-
 .action-btn:hover {
   color: #409eff;
 }
-
 .action-btn.liked {
-  color: #409eff; /* 或者你喜欢的其他高亮颜色 */
+  color: #409eff;
 }
-
 .reply-input-area {
   display: flex;
   gap: 10px;

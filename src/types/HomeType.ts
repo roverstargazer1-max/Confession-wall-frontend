@@ -1,43 +1,67 @@
-// src/types/index.ts
+// src/types/HomeType.ts
 
-export interface Picture {
-  width: number;
-  height: number;
-  url: string;
+// API `/api/user/{id}` 返回的用户信息结构
+export interface User {
+  id: number;
+  name: string; // 注意：API返回的是 name
+  username: string;
+  portrait: {
+    url: string;
+    width: number;
+    height: number;
+  } | null;
+  type: number;
+  // 根据 UserProfile 页面需要，可以补充 bio 字段
+  bio?: string;
 }
 
+// 帖子/评论中使用的头像结构
 export interface HostPortrait {
   width: number;
   height: number;
   url: string;
 }
 
+// 帖子中的图片结构
+export interface Picture {
+  width: number;
+  height: number;
+  url: string;
+}
+
+// API `/api/post/homepage` 和 `/api/user/{id}/posts` 返回的帖子结构
 export interface Post {
   postId: number;
-  host: number;
+  host: number; // 用户ID
+  hostname: string; // 用户名
+  hostportrait: HostPortrait; // 用户头像
   title: string;
   content: string;
   depth: number;
   hidden: boolean;
   likes: number;
   comments: number;
-  hostname: string;
-  hostportrait: HostPortrait;
-  subcomments: any[] | null; // 根据实际情况可定义更具体的类型
   pictures: Picture[] | null;
   liked: boolean;
+  subcomments: any[] | null;
+
+  // UI 控制属性
   showComments: boolean;
   commentsData: Comment[];
 }
 
+// API `/api/post/{id}/comments` 返回的评论结构
 export interface Comment {
-  subcommentId: number; // 文档中是 subcommentId
-  userId: number;
-  hostname: string;
-  hostportrait: { url: string };
+  commentId: number; // 文档中是 commentId
+  host: number; // 用户ID
+  hostname: string; // 用户名
+  hostportrait: HostPortrait; // 用户头像
   content: string;
   likes: number;
   liked: boolean;
-  // 用于控制回复框的显示状态
+  subcomments: any[] | null;
+  depth: number;
+
+  // UI 控制属性
   showReply?: boolean;
 }

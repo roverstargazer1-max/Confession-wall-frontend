@@ -21,11 +21,10 @@ export const loginApi = (params: LoginParams) => {
 }
 // 定义 getUserInfoApi 的参数类型
 export interface UserInfoParams {
-  user_id: number;
-  id:number
+  userId: number;
 }
 
-//获取需要用户信息的接口
+//获取用户数据
 export const getUserInfoApi = (params: UserInfoParams) => {
   const userStore = useUserStore()
   const token = userStore.token
@@ -35,9 +34,8 @@ export const getUserInfoApi = (params: UserInfoParams) => {
       "Content-Type": "application/json",
     } ,
    
-    url: '/api/user/{id}', 
+    url: `/api/user/${params.userId}`, 
     method: 'get',
-    data: params     
   })
 }
 // 注册参数类型

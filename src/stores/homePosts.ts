@@ -76,10 +76,9 @@ export const useHomePostsStore = defineStore('homePosts', {
       try {
         const res = await commentGetApi({ postId });
         if (res.data.code === 200) {
-          // 为每条评论添加 UI 控制属性
           const commentsWithState = res.data.data.map((comment: Comment) => ({
             ...comment,
-            showReply: false // 默认不显示回复框
+            showReply: false 
           }));
           post.commentsData = commentsWithState || [];
         } else {
@@ -124,7 +123,8 @@ export const useHomePostsStore = defineStore('homePosts', {
     // 切换评论点赞状态
     async toggleCommentLike(postId: number, commentId: number) {
       const post = this.posts.find(p => p.postId === postId);
-      const comment = post?.commentsData.find(c => c.subcommentId === commentId);
+      // [修正] 使用正确的 commentId 进行查找
+      const comment = post?.commentsData.find(c => c.commentId === commentId);
       if (!comment) return;
 
       const originalLiked = comment.liked;
@@ -133,10 +133,8 @@ export const useHomePostsStore = defineStore('homePosts', {
       comment.likes += comment.liked ? 1 : -1;
 
       try {
-        // 调用 API
         await commentLikeApi({ commentId });
       } catch (error) {
-        // 如果 API 调用失败，则回滚前端状态
         comment.liked = originalLiked;
         comment.likes = originalLikes;
         ElMessage.error('点赞失败，请重试');
@@ -146,7 +144,8 @@ export const useHomePostsStore = defineStore('homePosts', {
     // 切换回复输入框的显示
     toggleReplyBox(postId: number, commentId: number) {
       const post = this.posts.find(p => p.postId === postId);
-      const comment = post?.commentsData.find(c => c.subcommentId === commentId);
+      // [修正] 使用正确的 commentId 进行查找
+      const comment = post?.commentsData.find(c => c.commentId === commentId);
       if (comment) {
         comment.showReply = !comment.showReply;
       }
@@ -161,7 +160,6 @@ export const useHomePostsStore = defineStore('homePosts', {
       try {
         await secondCommentApi({ commentId, content });
         ElMessage.success('回复成功');
-        // 回复成功后，刷新整个评论列表以显示最新回复
         await this.fetchComments(postId);
       } catch (error) {
         ElMessage.error('回复失败，请重试');

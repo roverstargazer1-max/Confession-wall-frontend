@@ -1,49 +1,48 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { getUserInfoApi, type UserInfoParams } from '@/api/users' // 导入类型
+import { getUserInfoApi, type UserInfoParams } from '@/api/users'
+
+// [新增] 安全地从 localStorage 解析 JSON 的辅助函数
+function getStoredJson(key: string, defaultValue: any) {
+  const storedValue = localStorage.getItem(key);
+  if (!storedValue) {
+    return defaultValue;
+  }
+  try {
+    return JSON.parse(storedValue);
+  } catch (error) {
+    console.error(`Error parsing JSON from localStorage key "${key}":`, error);
+    // 如果解析失败，清除损坏的数据并返回默认值
+    localStorage.removeItem(key);
+    return defaultValue;
+  }
+}
 
 export const useUserStore = defineStore('user', () => {
-  const token = ref(localStorage.getItem('token') || '')
-  const userInfo = ref(JSON.parse(localStorage.getItem('userInfo') || '{}'))
-  const targetUserInfo=ref(JSON.parse(localStorage.getItem('targetUserInfo') || '{}'))
+  // [修正] 使用安全的辅助函数来初始化状态
+  const token = ref(localStorage.getItem('token') || '');
+  const userInfo = ref(getStoredJson('userInfo', {}));
+  const targetUserInfo = ref(getStoredJson('targetUserInfo', {}));
   
   const setToken = (newToken: string) => {
     token.value = newToken
     localStorage.setItem('token', newToken)
   }
-  // 【新增 Action】: 用于登录成功后一次性设置所有状态
+
   const setUserDataOnLogin = (loginData: any) => {
-    // 假设 loginData.data 是后端返回的整个 data 对象
-    // { apikey: '...', user_id: 1, username: '...', ... }
     const userToken = loginData.msg
     token.value = userToken
     localStorage.setItem('token', userToken)
-//userInfo：
-//      {
-//         "id": 0,
-//         "username": "string",
-//         "name": "string",
-//         "password": "string",
-//         "blacklist": [
-//             {}
-//         ],
-//         "portrait": {
-//             
-//         },
-//         "type": 0
-//     }
-    // 从 loginData.data 中提取用户信息部分并存储
+
     userInfo.value = loginData.data
     localStorage.setItem('userInfo', JSON.stringify(loginData.data))
   }
 
-  //获取目标用户信息
   const fetchUserInfo = async (params: UserInfoParams) => {
     if (!token.value) return;
     try {
-      // 将参数传递给API调用
       const response = await getUserInfoApi(params) 
-      if (response.data.code === 200) { // 成功
+      if (response.data.code === 200) {
         targetUserInfo.value = response.data.data
         localStorage.setItem('targetUserInfo', JSON.stringify(response.data.data))
       } else {
@@ -53,12 +52,15 @@ export const useUserStore = defineStore('user', () => {
       clearUserData()
     }
   }
-//清除
+
   const clearUserData = () => {
     token.value = ''
     userInfo.value = {}
+    targetUserInfo.value = {} // 登出时也清除目标用户信息
     localStorage.removeItem('token')
     localStorage.removeItem('userInfo')
+    localStorage.removeItem('targetUserInfo') // 登出时也清除
   }
+  
   return { token, userInfo, targetUserInfo, fetchUserInfo, clearUserData, setUserDataOnLogin }
 })
