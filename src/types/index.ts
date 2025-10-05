@@ -12,6 +12,10 @@ export interface Post {
   authorName: string;
   likeCount?: number;
   commentCount?: number;
+  title: string;
+  status: 'published' | 'draft';
+  author: string;
+
 }
 
 // API响应类型
@@ -47,4 +51,18 @@ export interface PostFormData {
   isPublic: boolean;
   scheduledTime: string | null;
   images: UploadImage[];
+}
+
+// 分页参数类型
+export interface PaginationParams {
+  page: number;
+  pageSize: number;
+}
+
+// 分页响应类型
+export interface PaginatedResponse<T> {
+  items: T[];
+  total: number;
+  page: number;
+  pageSize: number;
 }

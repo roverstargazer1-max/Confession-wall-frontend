@@ -33,7 +33,7 @@
         <!-- 图片上传 -->
         <el-form-item label="图片在这里哦">
           <el-upload
-            action="#"
+            action="/api/post"
             list-type="picture-card"
             :file-list="fileList"
             :before-upload="beforeImageUpload"
