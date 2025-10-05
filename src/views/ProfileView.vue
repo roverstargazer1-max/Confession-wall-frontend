@@ -26,7 +26,7 @@ const handleProfileSave = async () => {
   try{
     await nameFormRef.value.validate()
     try {
-      const params = { newname: newnameForm.newname, user_id: userStore.userInfo.user_id }
+      const params = { newname: newnameForm.newname, user_id: userStore.userInfo.id }
       await reviseNameApi(params)
       ElMessage.success('昵称修改成功！')
       // 更新 pinia 中的用户信息
@@ -47,7 +47,7 @@ const handlePasswordChange = async () => {
 
     // 步骤 2: 只有验证成功才会执行这里
     try {
-      const params = { newpassword: passwordForm.newPassword, user_id: userStore.userInfo.user_id , originpassword:passwordForm.originpassword}
+      const params = { newpassword: passwordForm.newPassword, user_id: userStore.userInfo.id , originpassword:passwordForm.originpassword}
       const Response = await revisePasswApi(params)
       if(Response.data.code === 200){
         
@@ -120,7 +120,7 @@ const handleUpload = async (options: any) => {
   const formData = new FormData()
 
   // 添加字段
-  formData.append('user_id', userStore.userInfo.user_id)
+  formData.append('user_id', userStore.userInfo.id)
   formData.append('picture', options.file)
 
   // 调用 API 并处理结果
