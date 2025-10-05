@@ -4,7 +4,7 @@ import type { Post, User } from '@/types/HomeType'
 import { otherPostGetApi, type otherPostGet } from '@/api/otherUser'
 import { useUserStore } from '@/stores/user'
 import { ChatDotRound } from '@element-plus/icons-vue'
-
+import { type upDataPost } from '@/types/manage'
 // 1. 获取 user store 实例
 const userStore = useUserStore()
 
@@ -44,6 +44,10 @@ const fetchUserPosts = async (id: number) => {
     isLoading.value = false
   }
 }
+// 修改帖子
+const editPost = async (post:upDataPost) => {
+  const newPost = 
+};
 
 // 3. 组件挂载时，从响应式的 userInfo 中获取 ID 并请求帖子数据
 onMounted(() => {
@@ -87,6 +91,11 @@ onMounted(() => {
             <div class="post-content">
               <h3 v-if="post.title" class="post-title">{{ post.title }}</h3>
               <p>{{ post.content }}</p>
+            </div>
+            <div class="card-actions">
+              <el-button @click="editPost(post)" class="edit-btn">
+                编辑
+              </el-button>
             </div>
             <div
               v-if="post.pictures && post.pictures.length > 0"
