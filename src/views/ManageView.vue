@@ -44,9 +44,8 @@ const fetchUserPosts = async (id: number) => {
     isLoading.value = false
   }
 }
-// 修改帖子
+// 修改帖子   @click="editPost(post)"
 const editPost = async (post:upDataPost) => {
-  const newPost = 
 };
 
 // 3. 组件挂载时，从响应式的 userInfo 中获取 ID 并请求帖子数据
@@ -87,15 +86,15 @@ onMounted(() => {
               <div class="user-info">
                 <span class="hostname">{{ post.hostname }}</span>
               </div>
+              <div class="card-actions">
+                <el-button class="edit-btn">
+                  编辑
+                </el-button>
+              </div>
             </div>
             <div class="post-content">
               <h3 v-if="post.title" class="post-title">{{ post.title }}</h3>
               <p>{{ post.content }}</p>
-            </div>
-            <div class="card-actions">
-              <el-button @click="editPost(post)" class="edit-btn">
-                编辑
-              </el-button>
             </div>
             <div
               v-if="post.pictures && post.pictures.length > 0"
@@ -240,5 +239,8 @@ onMounted(() => {
   align-items: center;
   gap: 8px;
   font-size: 14px;
+}
+.card-actions{
+  margin-left: auto;
 }
 </style>

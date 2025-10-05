@@ -1,17 +1,19 @@
 import request from '@/utils/request'
 import { useUserStore } from '@/stores/user'
-//上传帖子接口
-export const creatpostApi = (data: FormData) => {
+import type { Post, CreatePostRequest, ApiResponse } from '@/types'
+
+// 创建帖子接口
+export const createPostApi = (data: FormData): Promise<ApiResponse<Post>> => {
   const userStore = useUserStore()
   const token = userStore.token
   return request({
-    url: '/api/post/upload', 
-    method: 'POST', 
+    url: '/api/post',
+    method: 'POST',
     headers: {
       'x-api-key': token,
-      // 当使用 FormData 时，不需要手动设置 'Content-Type'
-      // 浏览器会自动设置 'Content-Type': 'multipart/form-data' 并附带正确的 boundary
+      // 注意：使用FormData时不要设置Content-Type，浏览器会自动设置
     },
-    data: data 
+    data: data
   })
 }
+
