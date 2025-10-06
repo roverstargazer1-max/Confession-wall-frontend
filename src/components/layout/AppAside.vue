@@ -77,4 +77,7 @@ const asideWidth = computed(() => isCollapse.value ? '65px' : '200px')
   margin-top: 9px;
   margin-bottom: 18px;
 }
+.el-menu-item.is-active {
+  background-color: #f8eded !important; // 设置一个与背景色稍有区别的颜色
+}
 </style>

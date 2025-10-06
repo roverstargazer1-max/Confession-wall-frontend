@@ -4,10 +4,13 @@ import { useConfirm } from '@/utils/useConfirm'
 import { ElMessage } from 'element-plus'
 import { useUserStore } from '@/stores/user' 
 import { computed } from 'vue'
+import { useRoute } from 'vue-router'
 //http://172.20.10.2:8080/images/aaa.png
 //https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png
 // 获取到 userStore 函数
 const userStore = useUserStore()
+const route = useRoute
+
 //获得用户昵称
 const name = computed(()=> userStore.userInfo.name)
 
