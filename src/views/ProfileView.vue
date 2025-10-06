@@ -126,6 +126,7 @@ const handleUpload = async (options: any) => {
   // 调用 API 并处理结果
   try {
     const response = await revisePortraitApi(formData)
+    console.log(response)
     if (response.data.code === 200) {
       ElMessage.success('头像上传成功！')
       // 为了即时预览，仍然使用 createObjectURL
@@ -138,7 +139,7 @@ const handleUpload = async (options: any) => {
 
       // 【核心步骤】将新的头像 URL 更新到 Pinia Store 中
       userStore.userInfo.portrait = newAvatarUrl
-      
+      localStorage.setItem('userInfo', JSON.stringify(userStore.userInfo))
       
     } else {
       ElMessage.error(response.data.msg || '头像上传失败')

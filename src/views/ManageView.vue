@@ -7,15 +7,14 @@ import { ChatDotRound, Plus } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { deletePostApi, revisePostApi } from '@/api/manage'
 import type { UploadUserFile } from 'element-plus'
-
+import { computed } from 'vue'
 const userStore = useUserStore()
-const userInfo = ref<User>(userStore.userInfo)
+const userInfo = computed(() => userStore.userInfo)
 const userPosts = ref<Post[]>([])
 const isLoading = ref(false)
 const error = ref<string | null>(null)
 const editDialogVisible = ref(false)
 const fileList = ref<UploadUserFile[]>([])
-
 const editingPostData = reactive({
   postId: 0,
   newTitle: '',
@@ -122,26 +121,39 @@ const handleUpdate = async () => {
     })
   } else {
     // 如果一张图片都没有，可能需要传一个空值，这取决于后端如何处理
-    // formData.append('pictures', ''); // 如果后端需要这个来清空图片，则取消注释
+    formData.append('pictures', ''); // 如果后端需要这个来清空图片，则取消注释
   }
 
 
   try {
     // 4. 调用 API
+    console.log('--- 开始检查 FormData 内容 ---');
+    for (let [key, value] of formData.entries()) {
+      console.log(key, ':', value);
+    }
+    console.log('--- FormData 内容检查完毕 ---');
     const response = await revisePostApi(formData, editingPostData.postId)
-    const updatedPostFromServer = response.data.data
+    console.log('后端返回的数据:', response.data);
 
-    // 5. 更新前端列表
-    const index = userPosts.value.findIndex((p) => p.postId === editingPostData.postId)
-    if (index !== -1) {
-      userPosts.value[index] = updatedPostFromServer
+    // 【新增】检查响应码，处理成功和失败两种情况
+    if (response.data.code === 200) {
+      ElMessage.success('帖子更新成功');
+      editDialogVisible.value = false;
+
+      // 【修改】不再手动更新列表，而是直接重新从服务器获取最新的帖子列表
+      // 这可以确保数据的完全一致性
+      if (userInfo.value && typeof userInfo.value.id === 'number') {
+        fetchUserPosts(userInfo.value.id);
+      }
+
+    } else {
+      // 如果 code 不是成功码，则显示后端的错误信息
+      ElMessage.error(response.data.msg || '更新失败，请稍后再试')
     }
 
-    ElMessage.success('帖子更新成功')
-    editDialogVisible.value = false
   } catch (err) {
     console.error('更新帖子失败:', err)
-    ElMessage.error('更新失败，请稍后再试')
+    ElMessage.error('更新失败，网络错误或服务异常')
   }
 }
 
@@ -188,7 +200,7 @@ onMounted(() => {
 
     <div v-else-if="userInfo" class="profile-content">
       <header class="profile-header">
-        <el-avatar :size="80" :src="userInfo.portrait?.url" />
+        <el-avatar :size="80" :src="userInfo.portrait || 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png'"  />
         <div class="user-details">
           <h1>{{ userInfo.name }}</h1>
           <span class="username">@{{ userInfo.username }}</span>

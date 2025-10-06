@@ -62,7 +62,7 @@ export const unBlackApi = (params: unBlack) => {
       "Content-Type": "application/json",
     },
     url: '/api/user/blacklist', // 使用模板字符串替换路径参数
-    method: 'DELETE',
+    method: 'POST',
     data:params
   })
 }

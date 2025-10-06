@@ -60,11 +60,16 @@ export const useHomePostsStore = defineStore('homePosts', {
         post.likes += originalLiked ? -1 : 1;
         
         try {
-            await postLikeApi({ postId });
+            const resLike = await postLikeApi({ postId });
+            console.log(resLike)
+            if(resLike.data.code === 200){
+              ElMessage.success('点赞成功')
+            }else{ElMessage.error('操作失败，请重试1');
+}
         } catch (error) {
             post.liked = originalLiked;
             post.likes = originalLikes;
-            ElMessage.error('操作失败，请重试');
+            ElMessage.error('操作失败，请重试2');
         }
     },
     
@@ -82,11 +87,11 @@ export const useHomePostsStore = defineStore('homePosts', {
           }));
           post.commentsData = commentsWithState || [];
         } else {
-          ElMessage.error('加载评论失败');
+          ElMessage.error('加载评论失败1');
         }
       } catch (error) {
         console.error("获取评论失败:", error);
-        ElMessage.error('加载评论失败');
+        ElMessage.error('加载评论失败2');
       }
     },
 

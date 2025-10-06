@@ -2,7 +2,7 @@
 
 // 帖子基础类型
 export interface Post {
-  id: string;
+  id: number;
   content: string;
   images: string[];
   isAnonymous: boolean;

@@ -19,8 +19,7 @@ const avatarUrl = computed(() => {
   const portraitData = userStore.userInfo.portrait;
 
   // 如果 portraitData 是一个非空字符串，就直接使用它
-  // Base64 字符串以 "data:" 开头
-  if (typeof portraitData === 'string' && portraitData.startsWith('data:')) {
+  if (typeof portraitData === 'string' ) {
     return portraitData;
   }
 
