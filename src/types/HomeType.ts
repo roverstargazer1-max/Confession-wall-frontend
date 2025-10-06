@@ -9,6 +9,7 @@ export interface User {
     height: number;
   } | null;
   type: number;
+  isBlacked?: boolean; // 新增字段
 }
 
 // 帖子/评论中使用的头像结构

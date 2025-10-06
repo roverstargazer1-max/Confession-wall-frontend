@@ -1,24 +1,28 @@
 <script lang="ts" setup>
 import { ref, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import type { Post, User } from '@/types/HomeType' 
-import { getUserInfoApi } from '@/api/users' // 假设 getUserInfoApi 的路径是这个
-import { otherPostGetApi, type otherPostGet } from '@/api/otherUser'
+import type { Post, User } from '@/types/HomeType'
+import { getUserInfoApi } from '@/api/users'
+import { otherPostGetApi, type otherPostGet, blackApi, unBlackApi, blackGetApi } from '@/api/otherUser'
+import { ElMessage } from 'element-plus'
+import { useUserStore } from '@/stores/user'
 
 // 导入 Element Plus 图标，用于帖子展示
 import { ChatDotRound } from '@element-plus/icons-vue'
 
 const route = useRoute()
+const userStore = useUserStore()
 
 // 存储用户信息和帖子列表
 const userInfo = ref<User | null>(null)
-const userPosts = ref<Post[]>([]) 
+const userPosts = ref<Post[]>([])
 const isLoading = ref(false)
-const error = ref<string | null>(null) // 用于处理加载失败的情况
+const error = ref<string | null>(null)
+const isBlacked = ref(false)
 
 /**
  * 根据用户ID获取用户信息和帖子列表
- * @param id - 用户ID
+ * @param id - 目标用户的ID
  */
 const fetchUserData = async (id: number) => {
   if (isNaN(id)) {
@@ -26,18 +30,25 @@ const fetchUserData = async (id: number) => {
     return;
   }
   
+  const loggedInUserId = userStore.userInfo.id;
+
+  // **【修正】** 明确检查 loggedInUserId 是否为 null 或 undefined
+  // 这样 ID 为 0 的用户也能被正确识别
+  if (loggedInUserId == null) {
+    error.value = "无法获取您的登录信息，请重新登录。";
+    return;
+  }
+
   isLoading.value = true
   error.value = null
   console.log(`正在获取 ID 为 ${id} 的用户信息...`)
   
   try {
-    // 构造 API 需要的参数格式
     const apiParams: otherPostGet = { userId: id }
-
-    // 使用 Promise.all 并行请求用户信息和用户帖子，提高加载速度
-    const [infoResponse, postsResponse] = await Promise.all([
-      getUserInfoApi(apiParams), // 假设 getUserInfoApi 也接受 { userId: number } 格式
-      otherPostGetApi(apiParams)
+    const [infoResponse, postsResponse, blackListResponse] = await Promise.all([
+      getUserInfoApi(apiParams),
+      otherPostGetApi(apiParams),
+      blackGetApi({ userId: loggedInUserId })
     ])
 
     // 处理用户信息请求结果
@@ -54,6 +65,15 @@ const fetchUserData = async (id: number) => {
       throw new Error(postsResponse.data.message || '获取用户帖子失败')
     }
 
+    // 处理拉黑列表结果
+
+    if (blackListResponse.data.code === 200) {
+      const targetUserId = Number(id);
+      isBlacked.value = blackListResponse.data.data.includes(targetUserId);
+    } else {
+      console.error('获取我的拉黑列表失败')
+    }
+
   } catch (err: any) {
     console.error("获取用户数据失败:", err)
     error.value = err.message || "加载数据时发生未知错误。"
@@ -62,14 +82,46 @@ const fetchUserData = async (id: number) => {
   }
 }
 
-// 1. 组件首次挂载时，获取路由中的ID并请求数据
+// 拉黑用户
+const handleBlock = async () => {
+  try {
+    const userId = Number(route.params.id)
+    const response = await blackApi({ target_id: userId });
+    if (response.data.code === 200) {
+      ElMessage.success('拉黑成功');
+      isBlacked.value = true;
+    } else {
+      ElMessage.error(response.data.msg || '操作失败');
+    }
+  } catch (error) {
+    ElMessage.error('操作失败，请重试');
+  }
+};
+
+// 取消拉黑用户
+const handleUnblock = async () => {
+  try {
+    const userId = Number(route.params.id)
+    console.log(userId)
+    const response = await unBlackApi({ target_id: userId })
+    console.log(response)
+
+    if (response.data.code === 200) {
+      ElMessage.success('已取消拉黑');
+      isBlacked.value = false;
+    } else {
+      ElMessage.error(response.data.msg || '操作失败');
+    }
+  } catch (error) {
+    ElMessage.error('操作失败，请重试');
+  }
+};
+
 onMounted(() => {
   const userId = Number(route.params.id)
   fetchUserData(userId)
 })
 
-// 2. 监听路由参数的变化。如果用户从一个主页跳转到另一个主页（例如/user/2 -> /user/3），
-//    这个监听可以确保页面数据得到刷新。
 watch(
   () => route.params.id,
   (newId) => {
@@ -95,6 +147,10 @@ watch(
         <div class="user-details">
           <h1>{{ userInfo.name }}</h1>
           <span class="username">@{{ userInfo.username }}</span>
+        </div>
+        <div class="actions">
+          <el-button v-if="isBlacked" type="info" @click="handleUnblock">取消拉黑</el-button>
+          <el-button v-else type="danger" @click="handleBlock">拉黑</el-button>
         </div>
       </header>
 
@@ -175,6 +231,10 @@ watch(
 .user-details .username {
   color: #909399;
   font-size: 16px;
+}
+
+.actions {
+  margin-left: auto;
 }
 
 .user-posts-section h2 {

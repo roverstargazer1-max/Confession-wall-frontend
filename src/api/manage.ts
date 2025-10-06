@@ -1,17 +1,17 @@
 import request from '@/utils/request'
 import { useUserStore } from '@/stores/user'
-import { type upDataPost, type deletePost } from '@/types/manageType'
+import { type deletePost } from '@/types/manageType'
 
-// 【修改】修改帖子接口，以支持 FormData
+// 修改帖子接口，以支持 FormData
+// 【修改】API现在只接收一个 pictures 字段，所有图片（新旧）都放在里面
 export const revisePostApi = (data: FormData, postId: number) => {
   const userStore = useUserStore()
   const token = userStore.token
   return request({
     url: `/api/post/${postId}`,
-    method: 'PATCH', // 通常更新部分数据用 PATCH，也可以是 POST
+    method: 'PATCH',
     headers: {
       'x-api-key': token
-      // 注意：当 data 是 FormData 时，浏览器会自动设置 Content-Type，我们不要手动设置
     },
     data: data
   })
