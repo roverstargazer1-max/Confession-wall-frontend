@@ -44,6 +44,9 @@ export interface Post {
   // UI 控制属性
   showComments: boolean;
   commentsData: Comment[];
+
+  anonymity: boolean;
+  isPublic:boolean
 }
 
 // API `/api/post/{id}/comments` 返回的评论结构

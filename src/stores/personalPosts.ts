@@ -43,13 +43,12 @@ export const usePostStore = defineStore('post', {
         });
 
         const response = await createPostApi(formData)
-        
-        if (response.code !== null) {
+        if (response.data.code === 200) {
           const serverPost = response.data
           this.posts.unshift(serverPost)
           return true
         } else {
-          this.setError(response.msg || '111创建帖子失败')
+          this.setError(response.data.msg || '111创建帖子失败')
           return false
         }
       } catch (error: any) {

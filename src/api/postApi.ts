@@ -3,7 +3,7 @@ import { useUserStore } from '@/stores/user'
 import type { Post, CreatePostRequest, ApiResponse } from '@/types'
 
 // 创建帖子接口
-export const createPostApi = (data: FormData): Promise<ApiResponse<Post>> => {
+export const createPostApi = (data: FormData) => {
   const userStore = useUserStore()
   const token = userStore.token
   return request({

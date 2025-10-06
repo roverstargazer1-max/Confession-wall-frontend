@@ -1,60 +1,178 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, reactive } from 'vue'
 import type { Post, User } from '@/types/HomeType'
 import { otherPostGetApi, type otherPostGet } from '@/api/otherUser'
 import { useUserStore } from '@/stores/user'
-import { ChatDotRound } from '@element-plus/icons-vue'
-import { type upDataPost } from '@/types/manage'
-// 1. 获取 user store 实例
-const userStore = useUserStore()
+import { ChatDotRound, Plus } from '@element-plus/icons-vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { deletePostApi, revisePostApi } from '@/api/manage'
+import type { UploadUserFile } from 'element-plus'
 
-// 2. 直接将 store 中的用户信息赋值给 ref，这是响应式的
+const userStore = useUserStore()
 const userInfo = ref<User>(userStore.userInfo)
 const userPosts = ref<Post[]>([])
 const isLoading = ref(false)
 const error = ref<string | null>(null)
+const editDialogVisible = ref(false)
+const fileList = ref<UploadUserFile[]>([])
 
-/**
- * 仅获取当前用户的帖子列表
- * @param id - 当前登录用户的ID
- */
-const fetchUserPosts = async (id: number) => {
-  if (isNaN(id)) {
-    error.value = "无效的用户ID";
-    return;
+const editingPostData = reactive({
+  postId: 0,
+  newTitle: '',
+  newContent: '',
+  anonymity: false,
+  isPublic: true
+})
+
+// 【修改】为 urlToFile 函数增加 try...catch 错误处理
+async function urlToFile(url: string, filename: string): Promise<File | null> {
+  try {
+    // 1. 使用 fetch 下载图片数据
+    const response = await fetch(url)
+    // 【新增】检查网络请求是否成功
+    if (!response.ok) {
+      // 如果请求失败（如 404 Not Found），则抛出错误
+      throw new Error(`Network response was not ok for url: ${url}`);
+    }
+    // 2. 将响应体转换为 Blob 对象
+    const blob = await response.blob()
+    // 3. 从 Blob 创建 File 对象
+    return new File([blob], filename, { type: blob.type })
+  } catch (error) {
+    // 【新增】如果 fetch 或后续操作失败，在此捕获错误
+    console.error(`无法将URL转换为文件: ${url}`, error)
+    // 返回 null，表示转换失败
+    return null
   }
-  
+}
+
+const fetchUserPosts = async (id: number) => {
+  // ... 此函数保持不变
+  if (isNaN(id)) {
+    error.value = '无效的用户ID'
+    return
+  }
   isLoading.value = true
   error.value = null
-  
   try {
     const apiParams: otherPostGet = { userId: id }
     const postsResponse = await otherPostGetApi(apiParams)
-
     if (postsResponse.data.code === 200) {
       userPosts.value = postsResponse.data.data
     } else {
       throw new Error(postsResponse.data.message || '获取您的帖子失败')
     }
-
   } catch (err: any) {
-    console.error("获取用户帖子失败:", err)
-    error.value = err.message || "加载帖子时发生未知错误。"
+    console.error('获取用户帖子失败:', err)
+    error.value = err.message || '加载帖子时发生未知错误。'
   } finally {
     isLoading.value = false
   }
 }
-// 修改帖子   @click="editPost(post)"
-const editPost = async (post:upDataPost) => {
-};
 
-// 3. 组件挂载时，从响应式的 userInfo 中获取 ID 并请求帖子数据
+const handleEdit = (post: Post) => {
+  // ... 此函数保持不变
+  editingPostData.postId = post.postId
+  editingPostData.newTitle = post.title || ''
+  editingPostData.newContent = post.content
+  editingPostData.anonymity = post.anonymity
+  editingPostData.isPublic = post.isPublic
+
+  // 【修改】在这里添加一个判断，安全地处理 post.pictures 可能为 null 的情况
+  fileList.value = post.pictures // 先判断 post.pictures 是否为真（即不是 null）
+    ? post.pictures.map((pic) => ({ // 如果是真，则执行 .map
+        name: pic.url.substring(pic.url.lastIndexOf('/') + 1),
+        url: pic.url,
+        uid: Date.now() + Math.random()
+      }))
+    : [] // 如果是假 (null)，则赋值为空数组
+
+  editDialogVisible.value = true
+}
+
+// 【重大修改】处理更新操作，将所有图片转换为 File 对象再提交
+const handleUpdate = async () => {
+  const formData = new FormData()
+
+  // 1. 追加文本数据
+  formData.append('newTitle', editingPostData.newTitle)
+  formData.append('newContent', editingPostData.newContent)
+  formData.append('anonymity', String(editingPostData.anonymity))
+  formData.append('isPublic', String(editingPostData.isPublic))
+
+  // 2. 处理图片：将所有图片（新旧）转换为 File 对象
+  const filePromises = fileList.value.map((file) => {
+    if (file.raw) {
+      // a. 如果是新上传的文件，直接返回 File 对象
+      return Promise.resolve(file.raw)
+    } else if (file.url) {
+      // b. 如果是已存在的图片，调用辅助函数将其URL转为 File 对象
+      return urlToFile(file.url, file.name)
+    }
+    return Promise.resolve(null)
+  })
+
+  // 等待所有图片都处理完毕
+  const allFiles = (await Promise.all(filePromises)).filter(Boolean) as File[]
+
+  // 3. 将所有处理好的 File 对象追加到 FormData 中
+  if (allFiles.length > 0) {
+    allFiles.forEach((file) => {
+      formData.append('pictures', file)
+    })
+  } else {
+    // 如果一张图片都没有，可能需要传一个空值，这取决于后端如何处理
+    // formData.append('pictures', ''); // 如果后端需要这个来清空图片，则取消注释
+  }
+
+
+  try {
+    // 4. 调用 API
+    const response = await revisePostApi(formData, editingPostData.postId)
+    const updatedPostFromServer = response.data.data
+
+    // 5. 更新前端列表
+    const index = userPosts.value.findIndex((p) => p.postId === editingPostData.postId)
+    if (index !== -1) {
+      userPosts.value[index] = updatedPostFromServer
+    }
+
+    ElMessage.success('帖子更新成功')
+    editDialogVisible.value = false
+  } catch (err) {
+    console.error('更新帖子失败:', err)
+    ElMessage.error('更新失败，请稍后再试')
+  }
+}
+
+const handleDelete = (postToDelete: Post) => {
+  // ... 此函数保持不变
+  ElMessageBox.confirm('确定要删除这篇帖子吗？此操作无法撤销。', '警告', {
+    confirmButtonText: '确定删除',
+    cancelButtonText: '取消',
+    type: 'warning'
+  })
+    .then(async () => {
+      try {
+        await deletePostApi({ postId: postToDelete.postId })
+        userPosts.value = userPosts.value.filter((post) => post.postId !== postToDelete.postId)
+        ElMessage.success('删除成功')
+      } catch (err) {
+        console.error('删除帖子失败:', err)
+        ElMessage.error('删除失败，请稍后再试')
+      }
+    })
+    .catch(() => {
+      ElMessage.info('已取消删除')
+    })
+}
+
 onMounted(() => {
-  // 检查 userInfo.id 是否存在并且类型是数字
+  // ... 此函数保持不变
   if (userInfo.value && typeof userInfo.value.id === 'number') {
     fetchUserPosts(userInfo.value.id)
   } else {
-    error.value = "无法获取您的用户信息，请尝试重新登录。"
+    error.value = '无法获取您的用户信息，请尝试重新登录。'
   }
 })
 </script>
@@ -67,7 +185,7 @@ onMounted(() => {
       <p>抱歉，加载失败</p>
       <p class="error-message">{{ error }}</p>
     </div>
-    
+
     <div v-else-if="userInfo" class="profile-content">
       <header class="profile-header">
         <el-avatar :size="80" :src="userInfo.portrait?.url" />
@@ -76,20 +194,15 @@ onMounted(() => {
           <span class="username">@{{ userInfo.username }}</span>
         </div>
       </header>
-
+      
       <div class="user-posts-section">
         <h2>我发布的帖子</h2>
         <div v-if="userPosts.length > 0" class="posts-list">
           <div v-for="post in userPosts" :key="post.postId" class="post-card">
             <div class="post-header">
-              <el-avatar :size="50" :src="post.hostportrait.url" />
-              <div class="user-info">
-                <span class="hostname">{{ post.hostname }}</span>
-              </div>
               <div class="card-actions">
-                <el-button class="edit-btn">
-                  编辑
-                </el-button>
+                <el-button class="edit-btn" @click="handleEdit(post)"> 编辑 </el-button>
+                <el-button class="delete-btn" @click="handleDelete(post)"> 删除 </el-button>
               </div>
             </div>
             <div class="post-content">
@@ -133,6 +246,43 @@ onMounted(() => {
       </div>
     </div>
   </div>
+
+  <el-dialog v-model="editDialogVisible" title="编辑帖子" width="600px">
+    <el-form :model="editingPostData" label-width="80px">
+      <el-form-item label="标题">
+        <el-input v-model="editingPostData.newTitle" placeholder="请输入标题"></el-input>
+      </el-form-item>
+      <el-form-item label="内容">
+        <el-input
+          v-model="editingPostData.newContent"
+          type="textarea"
+          :rows="5"
+          placeholder="请输入内容"
+        ></el-input>
+      </el-form-item>
+      <el-form-item label="图片">
+        <el-upload
+          v-model:file-list="fileList"
+          action="#"
+          list-type="picture-card"
+          :auto-upload="false"
+          multiple
+        >
+          <el-icon><Plus /></el-icon>
+        </el-upload>
+      </el-form-item>
+      <el-form-item label="选项">
+        <el-checkbox v-model="editingPostData.anonymity">匿名发送</el-checkbox>
+        <el-checkbox v-model="editingPostData.isPublic">公开帖子</el-checkbox>
+      </el-form-item>
+    </el-form>
+    <template #footer>
+      <span class="dialog-footer">
+        <el-button @click="editDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="handleUpdate"> 保存 </el-button>
+      </span>
+    </template>
+  </el-dialog>
 </template>
 
 <style lang="scss" scoped>
@@ -162,7 +312,8 @@ onMounted(() => {
   margin-bottom: 1.5rem;
   color: #303133;
 }
-.loading-tip, .no-posts-tip {
+.loading-tip,
+.no-posts-tip {
   text-align: center;
   color: #909399;
   padding: 40px 20px;
@@ -213,11 +364,25 @@ onMounted(() => {
   display: grid;
   gap: 8px;
 }
-.grid-1 { grid-template-columns: minmax(0, 2fr); }
-.grid-2 { grid-template-columns: repeat(2, 1fr); }
-.grid-3 { grid-template-columns: repeat(3, 1fr); }
-.grid-4 { grid-template-columns: repeat(2, 1fr); }
-.grid-5, .grid-6, .grid-7, .grid-8, .grid-9 { grid-template-columns: repeat(3, 1fr); }
+.grid-1 {
+  grid-template-columns: minmax(0, 2fr);
+}
+.grid-2 {
+  grid-template-columns: repeat(2, 1fr);
+}
+.grid-3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+.grid-4 {
+  grid-template-columns: repeat(2, 1fr);
+}
+.grid-5,
+.grid-6,
+.grid-7,
+.grid-8,
+.grid-9 {
+  grid-template-columns: repeat(3, 1fr);
+}
 .picture-item .el-image {
   width: 100%;
   height: 100%;
@@ -240,7 +405,7 @@ onMounted(() => {
   gap: 8px;
   font-size: 14px;
 }
-.card-actions{
+.card-actions {
   margin-left: auto;
 }
 </style>
