@@ -92,7 +92,7 @@ const handleLogin = async () => {
     
     try {
       const response = await loginApi(loginForm)
-
+      console.log('后端登录返回的完整数据:', response.data)
       if (response.data.code === 200 ) { 
         // 调用新的 action，直接传入后端返回的 data 对象
         userStore.setUserDataOnLogin(response.data)

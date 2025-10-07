@@ -18,9 +18,14 @@ const avatarUrl = computed(() => {
   const defaultAvatar = 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png';
   const portraitData = userStore.userInfo.portrait;
 
-  // 如果 portraitData 是一个非空字符串，就直接使用它
-  if (typeof portraitData === 'string' ) {
-    return portraitData;
+  // 【修正】检查 portraitData 是否是一个包含 url 属性的对象
+  if (portraitData && typeof portraitData === 'object' && portraitData.url) {
+    return portraitData.url;
+  }
+  
+  // 【兼容】如果 portraitData 本身就是字符串（例如上传后立即更新的情况），也能工作
+  if (typeof portraitData === 'string' && portraitData) {
+      return portraitData;
   }
 
   // 其他所有情况，都使用默认头像

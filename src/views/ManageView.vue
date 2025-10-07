@@ -200,7 +200,7 @@ onMounted(() => {
 
     <div v-else-if="userInfo" class="profile-content">
       <header class="profile-header">
-        <el-avatar :size="80" :src="userInfo.portrait || 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png'"  />
+        <el-avatar :size="80" :src="userInfo.portrait?.url || 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png'"  />
         <div class="user-details">
           <h1>{{ userInfo.name }}</h1>
           <span class="username">@{{ userInfo.username }}</span>

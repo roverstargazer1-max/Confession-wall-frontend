@@ -86,7 +86,7 @@ const registerForm = reactive({
 const RegisterRules = {
   username: [
     { required: true, message: '请输入账号', trigger: 'blur' },
-    { min: 4, max: 16, message: '账号长度在4-16个字符之间', trigger: 'blur' }
+    { min:3, max: 16, message: '账号长度在3-16个字符之间', trigger: 'blur' }
   ],
   password: [
     { required: true, message: '请输入密码', trigger: 'blur' },

@@ -9,6 +9,7 @@ import { useUserStore } from '@/stores/user'
 
 // 导入 Element Plus 图标，用于帖子展示
 import { ChatDotRound } from '@element-plus/icons-vue'
+import { lo } from 'element-plus/es/locales.mjs'
 
 const route = useRoute()
 const userStore = useUserStore()
@@ -50,7 +51,7 @@ const fetchUserData = async (id: number) => {
       otherPostGetApi(apiParams),
       blackGetApi({ userId: loggedInUserId })
     ])
-
+    console.log(infoResponse,postsResponse,blackListResponse)
     // 处理用户信息请求结果
     if (infoResponse.data.code === 200) {
       userInfo.value = infoResponse.data.data
@@ -103,14 +104,14 @@ const handleUnblock = async () => {
   try {
     const userId = Number(route.params.id)
     console.log(userId)
-    const response = await unBlackApi({ target_id: userId })
-    console.log(response)
+    const Response = await unBlackApi({ target_id: userId })
+    console.log(Response)
 
-    if (response.data.code === 200) {
+    if (Response.data.code === 200) {
       ElMessage.success('已取消拉黑');
       isBlacked.value = false;
     } else {
-      ElMessage.error(response.data.msg || '操作失败');
+      ElMessage.error(Response.data.msg || '操作失败');
     }
   } catch (error) {
     ElMessage.error('操作失败，请重试');
@@ -134,7 +135,7 @@ watch(
 
 <template>
   <div class="user-profile-container">
-    <div v-if="isLoading" class="loading-tip">正在加载...</div>
+    <div v-if="isLoading" class="loading-tip">未加载出...</div>
     
     <div v-else-if="error" class="error-tip">
       <p>抱歉，加载失败</p>

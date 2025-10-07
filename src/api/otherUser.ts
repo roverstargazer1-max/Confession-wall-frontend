@@ -61,8 +61,8 @@ export const unBlackApi = (params: unBlack) => {
       "x-api-key": token,
       "Content-Type": "application/json",
     },
-    url: '/api/user/blacklist', // 使用模板字符串替换路径参数
-    method: 'POST',
+    url: "/api/user/deblacklist", 
+    method: 'post',
     data:params
   })
 }
